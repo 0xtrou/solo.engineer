@@ -17,8 +17,8 @@ const Layout = ({ children }) => {
       <header className="terminal-header">
         <div className="header-left">
           <Link to="/" className="logo-link">
-            <img src="/logo.svg" alt="solo.engineer bolt logo" className="logo" width={32} height={32} />
-            <span className="logo-text">solo.engineer</span>
+            <img src="/logo.svg" alt="Bobbie Intelligence logo" className="logo" width={32} height={32} />
+            <span className="logo-text">Bobbie Intelligence</span>
           </Link>
         </div>
         <nav className="header-nav">
@@ -46,7 +46,7 @@ const Layout = ({ children }) => {
       </nav>
 
       <footer className="terminal-footer">
-        <span>© {new Date().getFullYear()} solo.engineer</span>
+        <span>© {new Date().getFullYear()} Bobbie Intelligence</span>
         <span>Built with ⚡ by autonomous agents</span>
       </footer>
     </div>

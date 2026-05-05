@@ -45,8 +45,8 @@ export const Head = ({ pageContext }) => {
   const { categoryLabel } = pageContext;
   return (
     <SEO
-      title={`${categoryLabel} Reports — solo.engineer`}
-      description={`Browse all ${categoryLabel} intelligence reports from solo.engineer.`}
+      title={`${categoryLabel} Reports — Bobbie Intelligence`}
+      description={`Browse all ${categoryLabel} intelligence reports from Bobbie Intelligence.`}
       path={`/reports/${pageContext.category}/`}
     />
   );

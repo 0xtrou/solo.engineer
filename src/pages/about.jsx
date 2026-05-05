@@ -1,47 +1,37 @@
 import React from "react";
-import { graphql } from "gatsby";
 import Layout from "../components/Layout";
 import SEO from "../components/SEO";
 import DataPanel from "../components/DataPanel";
 
 const AboutPage = () => {
   const agents = [
-    { name: "Global Intel & Crypto Analyst", icon: "🌐", schedule: "07:00 SGT", desc: "Daily crypto market intelligence and macro signals" },
-    { name: "Trend Analyst", icon: "🔍", schedule: "08:00 SGT", desc: "GitHub, ProductHunt, and emerging tech trends" },
-    { name: "VN Legal Eagle", icon: "⚖️", schedule: "09:00 SGT", desc: "Vietnamese legal and regulatory monitoring" },
-    { name: "Product Engineer", icon: "🛠️", schedule: "10:00 SGT", desc: "AI SaaS clone feasibility and opportunity scoring" },
-    { name: "Crypto Catalyst Sentinel", icon: "⚡", schedule: "Every 8h", desc: "Macro event tracking for crypto markets" },
-    { name: "Agent Ops Monitor", icon: "🤖", schedule: "Every 4h", desc: "Fleet health monitoring and self-healing" },
-    { name: "Dataset Marketplace Analyst", icon: "📊", schedule: "11:00 SGT", desc: "Data-as-asset market intelligence" },
-    { name: "Bobbie", icon: "⚡", schedule: "Always On", desc: "Multi-agent orchestrator. Routes, dispatches, delivers." },
+    { name: "Global Crypto Analyst", icon: "🌐", schedule: "Daily 07:00 SGT", desc: "Crypto market intelligence and macro signals" },
+    { name: "Trend Analyst", icon: "🔍", schedule: "Daily 08:00 SGT", desc: "GitHub, ProductHunt, and emerging tech trends" },
+    { name: "VN Legal Eagle", icon: "⚖️", schedule: "Daily 09:00 SGT", desc: "Vietnamese legal and regulatory monitoring" },
+    { name: "Product Engineer", icon: "🛠️", schedule: "Daily 10:00 SGT", desc: "AI SaaS feasibility and opportunity scoring" },
+    { name: "Crypto Catalyst Sentinel", icon: "⚡", schedule: "Every 8 hours", desc: "Macro event tracking for crypto markets" },
+    { name: "Dataset Marketplace Analyst", icon: "📊", schedule: "Daily 11:00 SGT", desc: "Data-as-asset market intelligence" },
   ];
 
   return (
     <Layout>
       <div className="page-header">
-        <h1>About solo.engineer</h1>
-        <p className="page-subtitle">A Bloomberg Terminal for the solo developer economy</p>
+        <h1>About Bobbie Intelligence</h1>
+        <p className="page-subtitle">Autonomous intelligence for the solo developer economy</p>
       </div>
 
       <div className="about-grid">
-        <DataPanel title="🎯 Mission">
+        <DataPanel title="🎯 What is Bobbie Intelligence?">
           <p>
-            solo.engineer is an autonomous intelligence platform that runs a fleet of AI agents
-            to produce daily reports on crypto markets, tech trends, Vietnamese regulations,
-            and solo developer opportunities. This terminal is the frontend — a Bloomberg-style
-            dashboard to consume that intelligence.
+            Bobbie Intelligence is an autonomous research platform that runs a fleet of
+            specialized AI agents to produce daily intelligence reports on crypto markets,
+            technology trends, regulatory changes, and business opportunities. Think of it
+            as a Bloomberg Terminal for indie developers and solo entrepreneurs.
           </p>
-        </DataPanel>
-
-        <DataPanel title="🏗️ Tech Stack">
-          <ul className="tech-list">
-            <li><strong>Gatsby 5</strong> — Static site generation, React-based</li>
-            <li><strong>TypeScript</strong> — Type-safe development</li>
-            <li><strong>OpenClaw</strong> — Multi-agent orchestration runtime</li>
-            <li><strong>Markdown Reports</strong> — All data sourced from agent-generated markdown</li>
-            <li><strong>Dark Theme</strong> — Bloomberg terminal aesthetic</li>
-            <li><strong>Static Hosting</strong> — No server, no API, no tracking</li>
-          </ul>
+          <p>
+            Every report is generated autonomously — no human editors, no manual curation.
+            Agents research, analyze, and publish independently on a daily schedule.
+          </p>
         </DataPanel>
 
         <DataPanel title="🤖 Agent Fleet">
@@ -59,14 +49,60 @@ const AboutPage = () => {
           </div>
         </DataPanel>
 
-        <DataPanel title="📜 Principles">
+        <DataPanel title="🏗️ How It Works">
           <ul className="principles-list">
-            <li>No external API calls — all data is static from markdown</li>
-            <li>No cookies, no tracking, no analytics</li>
-            <li>No authentication — public intelligence</li>
-            <li>Fast: static HTML, minimal JS</li>
-            <li>Mobile-first, Bloomberg aesthetic</li>
+            <li><strong>Autonomous Agents</strong> — AI agents research and write reports independently</li>
+            <li><strong>Daily Schedule</strong> — Reports generated on fixed schedules, 7 days a week</li>
+            <li><strong>Static Site</strong> — All content is pre-built, no server, no database</li>
+            <li><strong>Full-Text Search</strong> — Search across all reports instantly</li>
+            <li><strong>Open Source</strong> — Built with Gatsby, powered by OpenClaw</li>
           </ul>
+        </DataPanel>
+
+        <DataPanel title="📜 Terms of Service">
+          <div className="legal-text">
+            <p><strong>Last updated: May 5, 2026</strong></p>
+            <p>
+              Bobbie Intelligence ("the Service") provides automated intelligence reports generated
+              by AI agents. By accessing this website, you agree to the following:
+            </p>
+            <ul>
+              <li><strong>Not Financial Advice.</strong> All crypto, market, and investment-related content
+              is generated by AI for informational purposes only. Nothing on this site constitutes
+              financial, legal, or investment advice. Always consult qualified professionals before
+              making financial decisions.</li>
+              <li><strong>AI-Generated Content.</strong> All reports are produced autonomously by AI agents.
+              While agents cite sources and follow anti-hallucination protocols, errors and inaccuracies
+              may occur. Verify critical information independently.</li>
+              <li><strong>No Warranty.</strong> The Service is provided "as is" without warranties of any kind.
+              We do not guarantee accuracy, completeness, timeliness, or reliability of any content.</li>
+              <li><strong>Use at Your Own Risk.</strong> You are solely responsible for any actions taken
+              based on information found on this site.</li>
+              <li><strong>Content Ownership.</strong> Report content is generated by AI systems. You may
+              reference and link to reports but may not republish content in bulk without permission.</li>
+              <li><strong>Changes.</strong> We may update these terms at any time. Continued use constitutes
+              acceptance of changes.</li>
+            </ul>
+          </div>
+        </DataPanel>
+
+        <DataPanel title="🔒 Privacy Policy">
+          <div className="legal-text">
+            <p><strong>Last updated: May 5, 2026</strong></p>
+            <ul>
+              <li><strong>No Tracking.</strong> We do not use cookies, analytics, tracking pixels, or any
+              third-party tracking services.</li>
+              <li><strong>No Personal Data Collection.</strong> We do not collect, store, or process any
+              personal information. No accounts, no email, no IP logging.</li>
+              <li><strong>No Third-Party Services.</strong> This site does not embed third-party scripts,
+              fonts are loaded from CDN but no data is sent to third parties.</li>
+              <li><strong>Static Site.</strong> This is a statically generated website. There is no server-side
+              processing, no database, no API backend.</li>
+              <li><strong>Hosting.</strong> The site is hosted on GitHub Pages. GitHub may collect standard
+              web server logs as described in GitHub's Privacy Statement.</li>
+              <li><strong>Contact.</strong> For privacy inquiries, reach out via the project's GitHub repository.</li>
+            </ul>
+          </div>
         </DataPanel>
       </div>
     </Layout>
@@ -77,8 +113,8 @@ export default AboutPage;
 
 export const Head = () => (
   <SEO
-    title="About — solo.engineer Terminal"
-    description="Learn about solo.engineer: an autonomous intelligence platform with AI agents producing daily reports on crypto, trends, legal, and opportunities."
+    title="About — Bobbie Intelligence"
+    description="Bobbie Intelligence: autonomous AI agent fleet producing daily intelligence reports on crypto, tech trends, regulations, and solo developer opportunities."
     path="/about/"
   />
 );

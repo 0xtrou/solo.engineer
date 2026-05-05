@@ -27,7 +27,7 @@ const ReportDetailTemplate = ({ data, pageContext }) => {
           <div className="report-meta">
             <span className="report-meta-item">📁 {categoryIcon} {categoryLabel}</span>
             <span className="report-meta-item">📅 {report?.frontmatter?.date || report?.fields?.date || "—"}</span>
-            <span className="report-meta-item">👤 solo.engineer</span>
+            <span className="report-meta-item">👤 Bobbie Intelligence</span>
           </div>
         </header>
 
@@ -50,16 +50,16 @@ export const Head = ({ data, pageContext }) => {
   const title = report?.frontmatter?.title || `${categoryLabel} Report`;
   const desc = report?.excerpt
     ? report.excerpt.substring(0, 160)
-    : `Intelligence report from solo.engineer: ${title}`;
+    : `Intelligence report from Bobbie Intelligence: ${title}`;
 
   return (
     <SEO
-      title={`${title} — solo.engineer`}
+      title={`${title} — Bobbie Intelligence`}
       description={desc}
       path={report?.fields?.slug || "/"}
       article={{
         publishedTime: report?.frontmatter?.date || report?.fields?.date,
-        author: "solo.engineer",
+        author: "Bobbie Intelligence",
         category: categoryLabel,
       }}
     />

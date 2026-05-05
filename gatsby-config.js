@@ -1,10 +1,10 @@
 const config = {
   siteMetadata: {
-    title: "solo.engineer — Terminal",
-    description: "Bloomberg Terminal-style intelligence dashboard for solo developers. Real-time crypto signals, trend analysis, legal intelligence, and opportunity radar.",
-    author: "solo.engineer",
+    title: "Bobbie Intelligence — Terminal",
+    description: "Bloomberg Terminal-style intelligence dashboard powered by autonomous AI agents. Crypto signals, trend analysis, legal intelligence, and opportunity radar.",
+    author: "Bobbie Intelligence",
     siteUrl: "https://solo.engineer",
-    keywords: "solo developer, crypto intelligence, trend analysis, AI tools, market signals, opportunity radar",
+    keywords: "AI intelligence, crypto analysis, trend scouting, solo developer, market signals, opportunity radar, autonomous agents",
     social: {
       twitter: "@0xtrou",
     },

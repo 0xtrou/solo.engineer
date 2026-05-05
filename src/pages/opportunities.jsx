@@ -1,59 +1,61 @@
 import React from "react";
-;
+import { Link, graphql } from "gatsby";
 import Layout from "../components/Layout";
 import SEO from "../components/SEO";
 import DataPanel from "../components/DataPanel";
 
-const OpportunitiesPage = () => {
+const OpportunitiesPage = ({ data }) => {
+  const daily = data.daily.nodes;
+  const onDemand = data.onDemand.nodes;
+  const latestDaily = daily[0];
+
   return (
     <Layout>
       <div className="page-header">
-        <h1>🎯 Opportunity Radar</h1>
-        <p className="page-subtitle">Scored plays for solo developers</p>
+        <h1>🎯 Plays & Opportunities</h1>
+        <p className="page-subtitle">Scored solo developer opportunities — sourced from Product Engineer analysis</p>
       </div>
 
       <div className="opp-grid">
-        <DataPanel title="🔥 Hot Signals">
-          <p className="panel-note">
-            Opportunity signals are extracted from Product Engineer reports.
-            Check the <strong>Product Engineer</strong> category for the latest scored opportunities.
-          </p>
-          <div className="opp-scores">
-            <div className="score-card hot">
-              <span className="score-icon">🔥</span>
-              <span className="score-label">AI SaaS Clones</span>
-              <span className="score-desc">High feasibility, proven demand</span>
+        {latestDaily && (
+          <DataPanel title={`🛠️ Latest Analysis — ${latestDaily.fields?.date || ""}`}>
+            <div className="report-content markdown-body">
+              <div dangerouslySetInnerHTML={{ __html: latestDaily.html || "<p>No report available.</p>" }} />
             </div>
-            <div className="score-card warm">
-              <span className="score-icon">🟡</span>
-              <span className="score-label">Data-as-a-Service</span>
-              <span className="score-desc">Growing market, technical moat</span>
+            {latestDaily.fields?.slug && (
+              <Link to={latestDaily.fields.slug} className="view-all" style={{ marginTop: "12px", display: "inline-block" }}>
+                View full report →
+              </Link>
+            )}
+          </DataPanel>
+        )}
+
+        {onDemand.length > 0 && (
+          <DataPanel title="🎯 On-Demand Deep Dives">
+            <div className="report-list">
+              {onDemand.map((report) => (
+                <Link key={report.id} to={report.fields?.slug || "#"} className="report-list-item">
+                  <span className="report-date">{report.fields?.date || "—"}</span>
+                  <span className="report-title">
+                    {report.fields?.inferredTitle || "Analysis"}
+                  </span>
+                </Link>
+              ))}
             </div>
-            <div className="score-card watch">
-              <span className="score-icon">👀</span>
-              <span className="score-label">VN Market Entry</span>
-              <span className="score-desc">Regulatory clarity improving</span>
-            </div>
+          </DataPanel>
+        )}
+
+        <DataPanel title="📋 Daily Feasibility Reports">
+          <div className="report-list">
+            {daily.slice(0, 15).map((report) => (
+              <Link key={report.id} to={report.fields?.slug || "#"} className="report-list-item">
+                <span className="report-date">{report.fields?.date || "—"}</span>
+                <span className="report-title">
+                  {report.fields?.inferredTitle || "Product Engineer Report"}
+                </span>
+              </Link>
+            ))}
           </div>
-        </DataPanel>
-
-        <DataPanel title="📊 Scoring Methodology">
-          <ul className="methodology-list">
-            <li><strong>Market Size</strong> — TAM/SAM for solo-dev reachable market</li>
-            <li><strong>Technical Feasibility</strong> — Can one person build it in &lt;30 days?</li>
-            <li><strong>Competition</strong> — Less is better for solo devs</li>
-            <li><strong>Revenue Potential</strong> — MRR achievable within 6 months</li>
-            <li><strong>Trend Signal</strong> — Agent consensus on momentum</li>
-          </ul>
-        </DataPanel>
-
-        <DataPanel title="💡 How It Works">
-          <p>
-            Opportunities are surfaced daily by the Product Engineer agent, which
-            cross-references trend data, market signals, and legal intelligence to
-            identify and score viable solo developer plays. Reports are generated
-            automatically and published to this terminal.
-          </p>
         </DataPanel>
       </div>
     </Layout>
@@ -64,8 +66,41 @@ export default OpportunitiesPage;
 
 export const Head = () => (
   <SEO
-    title="Opportunities — solo.engineer Terminal"
-    description="Scored solo developer opportunities: AI SaaS, data services, and market entry plays ranked by feasibility and revenue potential."
+    title="Plays & Opportunities — Bobbie Intelligence"
+    description="Scored solo developer opportunities: AI SaaS feasibility, market entry plays, and monetization strategies from autonomous Product Engineer analysis."
     path="/opportunities/"
   />
 );
+
+export const query = graphql`
+  query OpportunitiesPage {
+    daily: allMarkdownRemark(
+      filter: { fields: { category: { eq: "product-engineer" }, reportType: { eq: "daily" } } }
+      sort: { fields: { date: DESC } }
+      limit: 15
+    ) {
+      nodes {
+        id
+        html
+        fields {
+          slug
+          date
+          inferredTitle
+        }
+      }
+    }
+    onDemand: allMarkdownRemark(
+      filter: { fields: { category: { eq: "product-engineer" }, reportType: { eq: "on-demand" } } }
+      sort: { fields: { date: DESC } }
+    ) {
+      nodes {
+        id
+        fields {
+          slug
+          date
+          inferredTitle
+        }
+      }
+    }
+  }
+`;

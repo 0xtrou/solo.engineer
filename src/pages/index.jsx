@@ -65,6 +65,28 @@ const IndexPage = ({ data }) => {
           <section className="dashboard-section">
             <h2 className="section-title">📡 Latest Intelligence</h2>
             <SignalHeatmap categories={sortedCategories} getCategoryMeta={getCategoryMeta} />
+            <div className="category-stats-grid">
+              {sortedCategories.map(([cat, items]) => {
+                const meta = getCategoryMeta(cat);
+                const latest = items[0];
+                const title = latest?.fields?.inferredTitle
+                  || latest?.frontmatter?.title
+                  || `${meta.label} — ${latest?.fields?.date || ""}`;
+                return (
+                  <a key={cat} href={`/reports/${cat}/`} className="category-stat-card" style={{ borderLeftColor: meta.color }}>
+                    <div className="stat-card-header">
+                      <span className="stat-card-icon">{meta.icon}</span>
+                      <span className="stat-card-label">{meta.label}</span>
+                      <span className="stat-card-count">{items.length}</span>
+                    </div>
+                    <div className="stat-card-latest">
+                      <span className="stat-card-date">{latest?.fields?.date || "—"}</span>
+                      <span className="stat-card-title">{title.length > 80 ? title.substring(0, 80) + "…" : title}</span>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
           </section>
 
           <section className="dashboard-section">
@@ -155,7 +177,7 @@ export default IndexPage;
 
 export const Head = ({ data }) => (
   <SEO
-    title="solo.engineer — Terminal"
+    title="Bobbie Intelligence — Terminal"
     description="Bloomberg Terminal-style intelligence dashboard for solo developers. Crypto signals, trend analysis, legal intelligence, and opportunity radar."
     path="/"
   />

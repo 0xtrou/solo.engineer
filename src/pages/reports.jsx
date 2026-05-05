@@ -67,7 +67,7 @@ export default ReportsPage;
 
 export const Head = () => (
   <SEO
-    title="Reports — solo.engineer Terminal"
+    title="Reports — Bobbie Intelligence"
     description="Browse all intelligence reports: crypto signals, trend analysis, legal updates, and opportunity radar."
     path="/reports/"
   />

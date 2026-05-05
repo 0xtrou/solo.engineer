@@ -17,19 +17,19 @@ const SEO = ({ title, description, path, article }) => {
         datePublished: article.publishedTime,
         author: {
           "@type": "Organization",
-          name: article.author || "solo.engineer",
+          name: article.author || "Bobbie Intelligence",
           url: siteUrl,
         },
         publisher: {
           "@type": "Organization",
-          name: "solo.engineer",
+          name: "Bobbie Intelligence",
           logo: { "@type": "ImageObject", url: ogImage },
         },
       }
     : {
         "@context": "https://schema.org",
         "@type": "WebSite",
-        name: "solo.engineer Terminal",
+        name: "Bobbie Intelligence",
         description,
         url: siteUrl,
       };
@@ -50,7 +50,7 @@ const SEO = ({ title, description, path, article }) => {
       <title>{title}</title>
       <meta name="description" content={description} />
       <meta name="keywords" content="solo developer, crypto intelligence, trend analysis, AI tools, market signals" />
-      <meta name="author" content="solo.engineer" />
+      <meta name="author" content="Bobbie Intelligence" />
       <meta name="robots" content="index, follow" />
       <link rel="canonical" href={fullUrl} />
       <meta property="og:title" content={title} />
@@ -58,7 +58,7 @@ const SEO = ({ title, description, path, article }) => {
       <meta property="og:image" content={ogImage} />
       <meta property="og:url" content={fullUrl} />
       <meta property="og:type" content={article ? "article" : "website"} />
-      <meta property="og:site_name" content="solo.engineer Terminal" />
+      <meta property="og:site_name" content="Bobbie Intelligence" />
       <meta name="twitter:card" content="summary" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />

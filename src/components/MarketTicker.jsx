@@ -3,7 +3,7 @@ import React from "react";
 const MarketTicker = () => (
   <div className="market-ticker" aria-label="Market ticker">
     <div className="ticker-content">
-      <span className="ticker-item">⚡ solo.engineer — Intelligence Terminal</span>
+      <span className="ticker-item">⚡ Bobbie Intelligence — Autonomous Research Terminal</span>
       <span className="ticker-sep">|</span>
       <span className="ticker-item">🌐 Crypto Intel Daily</span>
       <span className="ticker-sep">|</span>
