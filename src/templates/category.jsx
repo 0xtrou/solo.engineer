@@ -56,7 +56,7 @@ export const query = graphql`
   query CategoryPage($category: String!) {
     allMarkdownRemark(
       filter: { fields: { category: { eq: $category } } }
-      sort: { frontmatter: { date: DESC } }
+      sort: { fields: { date: DESC } }
     ) {
       nodes {
         id
