@@ -1,8 +1,5 @@
 const path = require("path");
 
-// Internal categories excluded from public site
-const HIDDEN_CATEGORIES = ["agent-ops"];
-
 const CATEGORY_LABELS = {
   "world-crypto": "Global Crypto Intelligence",
   "trend-scout": "Trend Scout",
@@ -61,10 +58,7 @@ exports.createPages = async ({ graphql, actions }) => {
 
   const result = await graphql(`
     query AllReports {
-      allMarkdownRemark(
-        sort: { frontmatter: { date: DESC } }
-        filter: { fields: { category: { nin: ${JSON.stringify(HIDDEN_CATEGORIES)} } } }
-      ) {
+      allMarkdownRemark(sort: { fields: { date: DESC } }) {
         nodes {
           id
           fields {
@@ -88,14 +82,11 @@ exports.createPages = async ({ graphql, actions }) => {
 
   const categories = new Set();
   reports.forEach((r) => {
-    if (r.fields?.category && !HIDDEN_CATEGORIES.includes(r.fields.category)) {
-      categories.add(r.fields.category);
-    }
+    if (r.fields?.category) categories.add(r.fields.category);
   });
 
   reports.forEach((report) => {
     if (!report.fields?.slug) return;
-    if (HIDDEN_CATEGORIES.includes(report.fields?.category)) return;
     createPage({
       path: report.fields.slug,
       component: path.resolve("./src/templates/report-detail.jsx"),
@@ -130,15 +121,11 @@ exports.onCreateNode = ({ node, actions }) => {
     const reportsMatch = fileAbsolutePath.match(/\/reports\/([^/]+)\//);
     const rawCategory = reportsMatch ? reportsMatch[1] : "uncategorized";
 
-    // Skip hidden categories entirely
-    if (HIDDEN_CATEGORIES.includes(rawCategory)) return;
-
     const fileMatch = fileAbsolutePath.match(/\/([^/]+)\.md$/);
     const filename = fileMatch ? fileMatch[1] : "";
     const dateMatch = filename.match(/^(\d{4}-\d{2}-\d{2})/);
     const date = dateMatch ? dateMatch[1] : "";
 
-    // Use clean category label for display
     const categoryLabel = CATEGORY_LABELS[rawCategory] || rawCategory;
     const categoryIcon = CATEGORY_ICONS[rawCategory] || "📄";
     const categoryColor = CATEGORY_COLORS[rawCategory] || "#888888";

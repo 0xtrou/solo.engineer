@@ -16,6 +16,7 @@ const config = {
       options: {
         name: "reports",
         path: `${__dirname}/../reports`,
+        ignore: ["**/agent-ops/**"],
       },
     },
     "gatsby-transformer-remark",

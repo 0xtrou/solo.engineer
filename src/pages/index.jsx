@@ -118,11 +118,7 @@ export const Head = ({ data }) => (
 
 export const query = graphql`
   query IndexPage {
-    allMarkdownRemark(
-      filter: { fields: { category: { nin: ["agent-ops"] } } }
-      sort: { fields: { date: DESC } }
-      limit: 50
-    ) {
+    allMarkdownRemark(sort: { fields: { date: DESC } }, limit: 50) {
       nodes {
         id
         fields {
