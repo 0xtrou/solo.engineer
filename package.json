@@ -1,0 +1,26 @@
+{
+  "name": "solo-terminal",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "develop": "gatsby develop",
+    "build": "gatsby build",
+    "serve": "gatsby serve",
+    "clean": "gatsby clean"
+  },
+  "keywords": [],
+  "author": "trou <trou@solo.engineer>",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "gatsby": "^5.16.1",
+    "gatsby-plugin-robots-txt": "^1.8.0",
+    "gatsby-plugin-sitemap": "^6.16.0",
+    "gatsby-source-filesystem": "^5.16.0",
+    "gatsby-transformer-remark": "^6.16.0",
+    "isomorphic-git": "^1.37.6",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  }
+}
