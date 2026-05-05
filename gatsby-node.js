@@ -142,18 +142,24 @@ exports.onCreateNode = ({ node, actions }) => {
     const categoryIcon = CATEGORY_ICONS[rawCategory] || "📄";
     const categoryColor = CATEGORY_COLORS[rawCategory] || "#888888";
 
-    // Extract title from first H1 in markdown body
+    // Use frontmatter if available, otherwise infer
+    const fmTitle = node.frontmatter?.title || "";
+    const fmDate = node.frontmatter?.date || "";
+    const fmType = node.frontmatter?.type || "";
+
+    // Extract title from first H1 as fallback
     const rawBody = node.rawMarkdownBody || "";
     const h1Match = rawBody.match(/^#\s+(.+)$/m);
-    const inferredTitle = h1Match ? h1Match[1].trim() : "";
+    const inferredTitle = fmTitle || (h1Match ? h1Match[1].trim() : "");
 
-    const reportType = isOnDemand(filename + ".md", rawCategory) ? "on-demand" : "daily";
+    const reportType = fmType || (isOnDemand(filename + ".md", rawCategory) ? "on-demand" : "daily");
+    const reportDate = fmDate || date;
 
     createNodeField({ node, name: "category", value: rawCategory });
     createNodeField({ node, name: "categoryLabel", value: categoryLabel });
     createNodeField({ node, name: "categoryIcon", value: categoryIcon });
     createNodeField({ node, name: "categoryColor", value: categoryColor });
-    createNodeField({ node, name: "date", value: date });
+    createNodeField({ node, name: "date", value: reportDate });
     createNodeField({ node, name: "inferredTitle", value: inferredTitle });
     createNodeField({ node, name: "reportType", value: reportType });
     createNodeField({
