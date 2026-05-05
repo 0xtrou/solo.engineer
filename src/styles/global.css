@@ -650,3 +650,92 @@ img { max-width: 100%; height: auto; }
   .signal-heatmap { grid-template-columns: 1fr; }
   .report-list-item { flex-direction: column; align-items: flex-start; gap: 0.25rem; }
 }
+
+/* ===== Search Bar ===== */
+.search-bar {
+  position: relative;
+  margin-right: 12px;
+}
+.search-bar input[type="search"] {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: 'JetBrains Mono', monospace;
+  width: 200px;
+  outline: none;
+  transition: border-color 0.2s, width 0.3s;
+}
+.search-bar input[type="search"]:focus {
+  border-color: var(--accent-orange);
+  width: 280px;
+}
+.search-bar input[type="search"]::placeholder {
+  color: var(--text-tertiary);
+}
+.search-results {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 360px;
+  max-height: 400px;
+  overflow-y: auto;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  margin-top: 4px;
+  z-index: 1000;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+.search-result-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  color: var(--text-primary);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.15s;
+}
+.search-result-item:last-child {
+  border-bottom: none;
+}
+.search-result-item:hover {
+  background: var(--bg-tertiary);
+}
+.search-result-icon {
+  font-size: 18px;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+.search-result-text {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.search-result-title {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.search-result-meta {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+@media (max-width: 768px) {
+  .search-bar input[type="search"] {
+    width: 140px;
+  }
+  .search-bar input[type="search"]:focus {
+    width: 200px;
+  }
+  .search-results {
+    width: 280px;
+    right: -40px;
+  }
+}

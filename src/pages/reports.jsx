@@ -5,42 +5,29 @@ import SEO from "../components/SEO";
 
 const ReportsPage = ({ data }) => {
   const categories = {};
-  const CATEGORY_ICONS = {
-    "world-crypto": "🌐",
-    "trend-scout": "🔍",
-    "vn-legal-watch": "⚖️",
-    "product-engineer": "🛠️",
-    "crypto-catalyst": "⚡",
-    "agent-ops": "🤖",
-    "dataset-marketplace": "📊",
-    "concept-monetizer": "💰",
-    "market-agent": "📈",
-  };
-  const CATEGORY_LABELS = {
-    "world-crypto": "Global Crypto Intel",
-    "trend-scout": "Trend Scout",
-    "vn-legal-watch": "VN Legal Eagle",
-    "product-engineer": "Product Engineer",
-    "crypto-catalyst": "Crypto Catalyst",
-    "agent-ops": "Agent Ops",
-    "dataset-marketplace": "Data Market",
-    "concept-monetizer": "Monetizer",
-    "market-agent": "Market Agent",
-  };
+  const CATEGORY_ORDER = [
+    "world-crypto", "trend-scout", "vn-legal-watch", "product-engineer",
+    "crypto-catalyst", "dataset-marketplace", "concept-monetizer",
+  ];
 
   data.allMarkdownRemark.nodes.forEach((node) => {
     const cat = node.fields?.category || "uncategorized";
     if (!categories[cat]) {
       categories[cat] = {
         nodes: [],
-        label: CATEGORY_LABELS[cat] || cat,
-        icon: CATEGORY_ICONS[cat] || "📄",
+        label: node.fields?.categoryLabel || cat,
+        icon: node.fields?.categoryIcon || "📄",
+        color: node.fields?.categoryColor || "#888888",
       };
     }
     categories[cat].nodes.push(node);
   });
 
-  const sorted = Object.entries(categories).sort(([, a], [, b]) => b.nodes.length - a.nodes.length);
+  const sorted = Object.entries(categories).sort(([a], [b]) => {
+    const ai = CATEGORY_ORDER.indexOf(a);
+    const bi = CATEGORY_ORDER.indexOf(b);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+  });
 
   return (
     <Layout>
@@ -94,6 +81,9 @@ export const query = graphql`
         fields {
           slug
           category
+          categoryLabel
+          categoryIcon
+          categoryColor
           date
         }
         frontmatter {

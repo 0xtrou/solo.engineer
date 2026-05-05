@@ -4,21 +4,8 @@ import Layout from "../components/Layout";
 import SEO from "../components/SEO";
 import DataPanel from "../components/DataPanel";
 
-const CATEGORY_LABELS = {
-  "world-crypto": "Global Crypto Intel",
-  "trend-scout": "Trend Scout",
-  "vn-legal-watch": "VN Legal Eagle",
-  "product-engineer": "Product Engineer",
-  "crypto-catalyst": "Crypto Catalyst",
-  "agent-ops": "Agent Ops",
-  "dataset-marketplace": "Data Market",
-  "concept-monetizer": "Monetizer",
-  "market-agent": "Market Agent",
-};
-
 const CategoryTemplate = ({ data, pageContext }) => {
-  const category = (pageContext).category || "";
-  const label = CATEGORY_LABELS[category] || category;
+  const { categoryLabel, categoryIcon } = pageContext;
   const nodes = data.allMarkdownRemark.nodes;
 
   return (
@@ -28,21 +15,21 @@ const CategoryTemplate = ({ data, pageContext }) => {
         <span className="breadcrumb-sep">›</span>
         <Link to="/reports/">Reports</Link>
         <span className="breadcrumb-sep">›</span>
-        <span className="breadcrumb-current">{label}</span>
+        <span className="breadcrumb-current">{categoryIcon} {categoryLabel}</span>
       </nav>
 
       <div className="page-header">
-        <h1>{label}</h1>
+        <h1>{categoryIcon} {categoryLabel}</h1>
         <p className="page-subtitle">{nodes.length} reports</p>
       </div>
 
-      <DataPanel title={`All ${label} Reports`}>
+      <DataPanel title={`All ${categoryLabel} Reports`}>
         <div className="report-list">
           {nodes.map((node) => (
             <Link key={node.id} to={node.fields?.slug || "/"} className="report-list-item">
               <span className="report-date">{node.fields?.date || "—"}</span>
               <span className="report-title">
-                {node.frontmatter?.title || `${label} — ${node.fields?.date || "Report"}`}
+                {node.frontmatter?.title || `${categoryLabel} — ${node.fields?.date || "Report"}`}
               </span>
             </Link>
           ))}
@@ -55,13 +42,12 @@ const CategoryTemplate = ({ data, pageContext }) => {
 export default CategoryTemplate;
 
 export const Head = ({ pageContext }) => {
-  const category = (pageContext).category || "";
-  const label = CATEGORY_LABELS[category] || category;
+  const { categoryLabel } = pageContext;
   return (
     <SEO
-      title={`${label} Reports — solo.engineer`}
-      description={`Browse all ${label} intelligence reports from solo.engineer.`}
-      path={`/reports/${category}/`}
+      title={`${categoryLabel} Reports — solo.engineer`}
+      description={`Browse all ${categoryLabel} intelligence reports from solo.engineer.`}
+      path={`/reports/${pageContext.category}/`}
     />
   );
 };
@@ -77,6 +63,8 @@ export const query = graphql`
         fields {
           slug
           category
+          categoryLabel
+          categoryIcon
           date
         }
         frontmatter {

@@ -6,18 +6,7 @@ import DataPanel from "../components/DataPanel";
 
 const ReportDetailTemplate = ({ data, pageContext }) => {
   const report = data.markdownRemark;
-  const category = (pageContext).category || "";
-  const CATEGORY_LABELS = {
-    "world-crypto": "Global Crypto Intel",
-    "trend-scout": "Trend Scout",
-    "vn-legal-watch": "VN Legal Eagle",
-    "product-engineer": "Product Engineer",
-    "crypto-catalyst": "Crypto Catalyst",
-    "agent-ops": "Agent Ops",
-    "dataset-marketplace": "Data Market",
-    "concept-monetizer": "Monetizer",
-    "market-agent": "Market Agent",
-  };
+  const { category, categoryLabel, categoryIcon } = pageContext;
 
   return (
     <Layout>
@@ -27,15 +16,15 @@ const ReportDetailTemplate = ({ data, pageContext }) => {
           <span className="breadcrumb-sep">›</span>
           <Link to="/reports/">Reports</Link>
           <span className="breadcrumb-sep">›</span>
-          <Link to={`/reports/${category}/`}>{CATEGORY_LABELS[category] || category}</Link>
+          <Link to={`/reports/${category}/`}>{categoryIcon} {categoryLabel}</Link>
           <span className="breadcrumb-sep">›</span>
-          <span className="breadcrumb-current">{report?.frontmatter?.title || "Report"}</span>
+          <span className="breadcrumb-current">{report?.fields?.date || "Report"}</span>
         </nav>
 
         <header className="report-header">
-          <h1>{report?.frontmatter?.title || `${CATEGORY_LABELS[category] || category} Report`}</h1>
+          <h1>{report?.frontmatter?.title || `${categoryLabel} Report`}</h1>
           <div className="report-meta">
-            <span className="report-meta-item">📁 {CATEGORY_LABELS[category] || category}</span>
+            <span className="report-meta-item">📁 {categoryIcon} {categoryLabel}</span>
             <span className="report-meta-item">📅 {report?.frontmatter?.date || report?.fields?.date || "—"}</span>
             <span className="report-meta-item">👤 solo.engineer</span>
           </div>
@@ -56,8 +45,8 @@ export default ReportDetailTemplate;
 
 export const Head = ({ data, pageContext }) => {
   const report = data.markdownRemark;
-  const category = (pageContext).category || "";
-  const title = report?.frontmatter?.title || `${category} Report`;
+  const { categoryLabel } = pageContext;
+  const title = report?.frontmatter?.title || `${categoryLabel} Report`;
   const desc = report?.excerpt
     ? report.excerpt.substring(0, 160)
     : `Intelligence report from solo.engineer: ${title}`;
@@ -70,7 +59,7 @@ export const Head = ({ data, pageContext }) => {
       article={{
         publishedTime: report?.frontmatter?.date || report?.fields?.date,
         author: "solo.engineer",
-        category,
+        category: categoryLabel,
       }}
     />
   );
@@ -85,6 +74,8 @@ export const query = graphql`
       fields {
         slug
         category
+        categoryLabel
+        categoryIcon
         date
       }
       frontmatter {

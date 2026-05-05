@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "gatsby";
+import SearchBar from "./SearchBar";
 
 
 const NAV_ITEMS = [
@@ -28,6 +29,7 @@ const Layout = ({ children }) => {
           ))}
         </nav>
         <div className="header-right">
+          <SearchBar />
           <span className="terminal-time">{new Date().toISOString().split("T")[0]}</span>
         </div>
       </header>

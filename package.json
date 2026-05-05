@@ -14,12 +14,15 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@npmcli/git": "^7.0.2",
+    "dugite": "^3.2.2",
     "gatsby": "^5.16.1",
     "gatsby-plugin-robots-txt": "^1.8.0",
     "gatsby-plugin-sitemap": "^6.16.0",
     "gatsby-source-filesystem": "^5.16.0",
     "gatsby-transformer-remark": "^6.16.0",
     "isomorphic-git": "^1.37.6",
+    "lunr": "^2.3.9",
     "node-ssh": "^13.2.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
