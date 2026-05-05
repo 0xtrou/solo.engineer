@@ -7,6 +7,7 @@ import DataPanel from "../components/DataPanel";
 const ReportDetailTemplate = ({ data, pageContext }) => {
   const report = data.markdownRemark;
   const { category, categoryLabel, categoryIcon } = pageContext;
+  const title = report?.frontmatter?.title || report?.fields?.inferredTitle || `${categoryLabel} Report`;
 
   return (
     <Layout>
@@ -22,7 +23,7 @@ const ReportDetailTemplate = ({ data, pageContext }) => {
         </nav>
 
         <header className="report-header">
-          <h1>{report?.frontmatter?.title || `${categoryLabel} Report`}</h1>
+          <h1>{title}</h1>
           <div className="report-meta">
             <span className="report-meta-item">📁 {categoryIcon} {categoryLabel}</span>
             <span className="report-meta-item">📅 {report?.frontmatter?.date || report?.fields?.date || "—"}</span>

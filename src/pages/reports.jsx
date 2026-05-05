@@ -75,7 +75,10 @@ export const Head = () => (
 
 export const query = graphql`
   query ReportsPage {
-    allMarkdownRemark(sort: { frontmatter: { date: DESC } }) {
+    allMarkdownRemark(
+      filter: { fields: { category: { nin: ["agent-ops"] } } }
+      sort: { fields: { date: DESC } }
+    ) {
       nodes {
         id
         fields {

@@ -8,15 +8,13 @@ import SignalHeatmap from "../components/SignalHeatmap";
 import DataPanel from "../components/DataPanel";
 
 const CATEGORY_META = {
-  "world-crypto": { label: "Global Crypto Intel", icon: "🌐", color: "#8B5CF6" },
+  "world-crypto": { label: "Global Crypto Intelligence", icon: "🌐", color: "#8B5CF6" },
   "trend-scout": { label: "Trend Scout", icon: "🔍", color: "#10B981" },
-  "vn-legal-watch": { label: "VN Legal Eagle", icon: "⚖️", color: "#F59E0B" },
+  "vn-legal-watch": { label: "Vietnam Legal Watch", icon: "⚖️", color: "#F59E0B" },
   "product-engineer": { label: "Product Engineer", icon: "🛠️", color: "#0066CC" },
-  "crypto-catalyst": { label: "Crypto Catalyst", icon: "⚡", color: "#FF4500" },
-  "agent-ops": { label: "Agent Ops", icon: "🤖", color: "#888888" },
-  "dataset-marketplace": { label: "Data Market", icon: "📊", color: "#06B6D4" },
-  "concept-monetizer": { label: "Monetizer", icon: "💰", color: "#22C55E" },
-  "market-agent": { label: "Market Agent", icon: "📈", color: "#EC4899" },
+  "crypto-catalyst": { label: "Crypto Catalyst Sentinel", icon: "⚡", color: "#FF4500" },
+  "dataset-marketplace": { label: "Dataset Marketplace", icon: "📊", color: "#6366F1" },
+  "concept-monetizer": { label: "Concept Monetizer", icon: "💰", color: "#22C55E" },
 };
 
 function getCategoryMeta(category) {
@@ -47,15 +45,18 @@ const IndexPage = ({ data }) => {
           <section className="dashboard-section">
             <h2 className="section-title">📋 Recent Reports</h2>
             <div className="report-grid">
-              {reports.slice(0, 20).map((report) => {
+              {reports.slice(0, 30).map((report) => {
                 const meta = getCategoryMeta(report.fields?.category || "");
+                const title = report.frontmatter?.title
+                  || report.fields?.inferredTitle
+                  || `${meta.label} — ${report.fields?.date || "Report"}`;
                 return (
                   <ReportCard
                     key={report.id}
                     slug={report.fields?.slug || ""}
                     category={report.fields?.category || ""}
                     date={report.fields?.date || ""}
-                    title={report.frontmatter?.title || meta.label}
+                    title={title}
                     excerpt={report.excerpt || ""}
                     icon={meta.icon}
                     color={meta.color}
@@ -117,13 +118,20 @@ export const Head = ({ data }) => (
 
 export const query = graphql`
   query IndexPage {
-    allMarkdownRemark(sort: { frontmatter: { date: DESC } }, limit: 50) {
+    allMarkdownRemark(
+      filter: { fields: { category: { nin: ["agent-ops"] } } }
+      sort: { fields: { date: DESC } }
+      limit: 50
+    ) {
       nodes {
         id
         fields {
           slug
           category
+          categoryLabel
+          categoryIcon
           date
+          inferredTitle
         }
         frontmatter {
           title

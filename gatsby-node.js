@@ -47,6 +47,7 @@ exports.createSchemaCustomization = ({ actions }) => {
       categoryIcon: String
       categoryColor: String
       date: String
+      inferredTitle: String
     }
     type MarkdownRemarkFrontmatter {
       title: String
@@ -142,11 +143,17 @@ exports.onCreateNode = ({ node, actions }) => {
     const categoryIcon = CATEGORY_ICONS[rawCategory] || "📄";
     const categoryColor = CATEGORY_COLORS[rawCategory] || "#888888";
 
+    // Extract title from first H1 in markdown body
+    const rawBody = node.rawMarkdownBody || "";
+    const h1Match = rawBody.match(/^#\s+(.+)$/m);
+    const inferredTitle = h1Match ? h1Match[1].trim() : "";
+
     createNodeField({ node, name: "category", value: rawCategory });
     createNodeField({ node, name: "categoryLabel", value: categoryLabel });
     createNodeField({ node, name: "categoryIcon", value: categoryIcon });
     createNodeField({ node, name: "categoryColor", value: categoryColor });
     createNodeField({ node, name: "date", value: date });
+    createNodeField({ node, name: "inferredTitle", value: inferredTitle });
     createNodeField({
       node,
       name: "slug",
