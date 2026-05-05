@@ -2,7 +2,6 @@ import React from "react";
 import { graphql } from "gatsby";
 import Layout from "../components/Layout";
 import SEO from "../components/SEO";
-import MarketTicker from "../components/MarketTicker";
 import ReportCard from "../components/ReportCard";
 import SignalHeatmap from "../components/SignalHeatmap";
 import DataPanel from "../components/DataPanel";
@@ -59,7 +58,6 @@ const IndexPage = ({ data }) => {
 
   return (
     <Layout>
-      <MarketTicker />
       <div className="dashboard-grid">
         <div className="dashboard-main">
           <section className="dashboard-section">

@@ -4,25 +4,6 @@ import Layout from "../components/Layout";
 import SEO from "../components/SEO";
 import DataPanel from "../components/DataPanel";
 
-const CATEGORY_META = {
-  "world-crypto": { label: "Global Crypto Intelligence", icon: "🌐", color: "#8B5CF6" },
-  "trend-scout": { label: "Trend Scout", icon: "🔍", color: "#10B981" },
-  "vn-legal-watch": { label: "Vietnam Legal Watch", icon: "⚖️", color: "#F59E0B" },
-  "product-engineer": { label: "Product Engineer", icon: "🛠️", color: "#0066CC" },
-  "crypto-catalyst": { label: "Crypto Catalyst Sentinel", icon: "⚡", color: "#FF4500" },
-  "dataset-marketplace": { label: "Dataset Marketplace", icon: "📊", color: "#6366F1" },
-  "concept-monetizer": { label: "Concept Monetizer", icon: "💰", color: "#22C55E" },
-};
-
-const CATEGORY_ORDER = [
-  "world-crypto", "trend-scout", "vn-legal-watch", "product-engineer",
-  "crypto-catalyst", "dataset-marketplace", "concept-monetizer",
-];
-
-function getMeta(cat) {
-  return CATEGORY_META[cat] || { label: cat, icon: "📄", color: "#888" };
-}
-
 const MarketsPage = ({ data }) => {
   const reports = data.allMarkdownRemark.nodes;
   const latest = reports[0];
@@ -46,31 +27,33 @@ const MarketsPage = ({ data }) => {
           )}
         </DataPanel>
 
-        <DataPanel title="📋 Recent Crypto Reports">
-          <div className="report-list">
-            {reports.slice(0, 10).map((report) => (
-              <Link key={report.id} to={report.fields?.slug || "#"} className="report-list-item">
-                <span className="report-date">{report.fields?.date || "—"}</span>
-                <span className="report-title">
-                  {report.fields?.inferredTitle || "Crypto Report"}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </DataPanel>
+        <div className="side-panels">
+          <DataPanel title="📋 Recent Crypto Reports">
+            <div className="report-list">
+              {reports.slice(0, 8).map((report) => (
+                <Link key={report.id} to={report.fields?.slug || "#"} className="report-list-item">
+                  <span className="report-date">{report.fields?.date || "—"}</span>
+                  <span className="report-title">
+                    {report.fields?.inferredTitle || "Crypto Report"}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </DataPanel>
 
-        <DataPanel title="⚡ Recent Catalyst Reports">
-          <div className="report-list">
-            {data.catalyst.nodes.slice(0, 8).map((report) => (
-              <Link key={report.id} to={report.fields?.slug || "#"} className="report-list-item">
-                <span className="report-date">{report.fields?.date || "—"}</span>
-                <span className="report-title">
-                  {report.fields?.inferredTitle || "Catalyst Report"}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </DataPanel>
+          <DataPanel title="⚡ Recent Catalyst Reports">
+            <div className="report-list">
+              {data.catalyst.nodes.slice(0, 8).map((report) => (
+                <Link key={report.id} to={report.fields?.slug || "#"} className="report-list-item">
+                  <span className="report-date">{report.fields?.date || "—"}</span>
+                  <span className="report-title">
+                    {report.fields?.inferredTitle || "Catalyst Report"}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </DataPanel>
+        </div>
       </div>
     </Layout>
   );

@@ -32,47 +32,55 @@ async function generateAssets() {
     </pattern>
   </defs>
   <rect width="1200" height="630" fill="url(#bg)"/>
-  <rect width="1200" height="630" fill="url(#grid)" opacity="0.5"/>
-  
-  <!-- Bolt icon left -->
-  <g transform="translate(80, 115) scale(3)">
+  <rect width="1200" height="630" fill="url(#grid)" opacity="0.4"/>
+
+  <!-- Left accent bar -->
+  <rect x="0" y="0" width="6" height="630" fill="#FF7300"/>
+
+  <!-- Bolt icon — vertically centered in left zone -->
+  <g transform="translate(80, 180) scale(2.8)">
     <path d="M 60 10 L 20 70 L 50 70 L 40 120 L 90 55 L 55 55 Z" fill="url(#bolt)"/>
   </g>
-  
-  <!-- Connection lines (network graph) -->
-  <g stroke="#ff730033" stroke-width="1.5" fill="none">
-    <line x1="380" y1="200" x2="500" y2="150"/>
-    <line x1="500" y1="150" x2="600" y2="220"/>
-    <line x1="600" y1="220" x2="520" y2="350"/>
-    <line x1="380" y1="200" x2="520" y2="350"/>
-    <line x1="500" y1="150" x2="700" y2="100"/>
-    <line x1="600" y1="220" x2="750" y2="280"/>
-    <line x1="520" y1="350" x2="680" y2="400"/>
-    <line x1="700" y1="100" x2="850" y2="160"/>
-    <line x1="750" y1="280" x2="900" y2="200"/>
+
+  <!-- Network graph — scattered around bolt -->
+  <g stroke="#ff730030" stroke-width="1.2" fill="none">
+    <line x1="340" y1="250" x2="440" y2="200"/>
+    <line x1="440" y1="200" x2="520" y2="260"/>
+    <line x1="520" y1="260" x2="460" y2="360"/>
+    <line x1="340" y1="250" x2="460" y2="360"/>
+    <line x1="440" y1="200" x2="580" y2="160"/>
+    <line x1="520" y1="260" x2="640" y2="310"/>
+    <line x1="460" y1="360" x2="600" y2="400"/>
+    <line x1="580" y1="160" x2="720" y2="190"/>
+    <line x1="640" y1="310" x2="780" y2="260"/>
   </g>
-  <g fill="#ff730066">
-    <circle cx="380" cy="200" r="5"/>
-    <circle cx="500" cy="150" r="7"/>
-    <circle cx="600" cy="220" r="6"/>
-    <circle cx="520" cy="350" r="8"/>
-    <circle cx="700" cy="100" r="5"/>
-    <circle cx="750" cy="280" r="6"/>
-    <circle cx="680" cy="400" r="7"/>
-    <circle cx="850" cy="160" r="5"/>
-    <circle cx="900" cy="200" r="6"/>
+  <g fill="#ff730055">
+    <circle cx="340" cy="250" r="4"/>
+    <circle cx="440" cy="200" r="5"/>
+    <circle cx="520" cy="260" r="5"/>
+    <circle cx="460" cy="360" r="6"/>
+    <circle cx="580" cy="160" r="4"/>
+    <circle cx="640" cy="310" r="5"/>
+    <circle cx="600" cy="400" r="5"/>
+    <circle cx="720" cy="190" r="4"/>
+    <circle cx="780" cy="260" r="5"/>
   </g>
-  
-  <!-- Title -->
-  <text x="420" y="480" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="800" fill="#ffffff" letter-spacing="-2">
+
+  <!-- Divider line -->
+  <line x1="60" y1="430" x2="1140" y2="430" stroke="#333" stroke-width="1"/>
+
+  <!-- Title — left-aligned with equal horizontal padding (80px each side) -->
+  <text x="80" y="510" font-family="system-ui, -apple-system, sans-serif" font-size="62" font-weight="800" fill="#ffffff" letter-spacing="-1">
     Bobbie Intelligence
   </text>
-  <text x="420" y="540" font-family="system-ui, -apple-system, sans-serif" font-size="28" fill="#888888" letter-spacing="1">
+
+  <!-- Subtitle -->
+  <text x="80" y="560" font-family="system-ui, -apple-system, sans-serif" font-size="22" fill="#888888" letter-spacing="3">
     AUTONOMOUS INTELLIGENCE TERMINAL
   </text>
-  
-  <!-- Bottom bar -->
-  <rect x="0" y="610" width="1200" height="20" fill="#FF7300" opacity="0.8"/>
+
+  <!-- Bottom accent bar -->
+  <rect x="0" y="624" width="1200" height="6" fill="#FF7300"/>
 </svg>`;
 
   const ogPng = await sharp(Buffer.from(ogSvg))

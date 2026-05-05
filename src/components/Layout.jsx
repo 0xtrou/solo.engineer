@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "gatsby";
 import SearchBar from "./SearchBar";
+import MarketTicker from "./MarketTicker";
 
 
 const NAV_ITEMS = [
@@ -8,6 +9,7 @@ const NAV_ITEMS = [
   { path: "/reports/", label: "Reports", icon: "📋" },
   { path: "/markets/", label: "Markets", icon: "📈" },
   { path: "/opportunities/", label: "Plays", icon: "🎯" },
+  { path: "/legal/", label: "VN Legal", icon: "⚖️" },
   { path: "/about/", label: "About", icon: "ℹ️" },
 ];
 
@@ -30,9 +32,12 @@ const Layout = ({ children }) => {
         </nav>
         <div className="header-right">
           <SearchBar />
+          <span className="header-lang-hint">🇻🇳 VI | 🇬🇧 EN</span>
           <span className="terminal-time">{new Date().toISOString().split("T")[0]}</span>
         </div>
       </header>
+
+      <MarketTicker />
 
       <main className="terminal-main">{children}</main>
 

@@ -4,26 +4,26 @@ import Layout from "../components/Layout";
 import SEO from "../components/SEO";
 import DataPanel from "../components/DataPanel";
 
-const OpportunitiesPage = ({ data }) => {
-  const daily = data.daily.nodes;
+const LegalPage = ({ data }) => {
+  const reports = data.daily.nodes;
   const onDemand = data.onDemand.nodes;
-  const latestDaily = daily[0];
+  const latest = reports[0];
 
   return (
     <Layout>
       <div className="page-header">
-        <h1>🎯 Plays & Opportunities</h1>
-        <p className="page-subtitle">Scored solo developer opportunities — sourced from Product Engineer analysis</p>
+        <h1>⚖️ Vietnam Legal Watch</h1>
+        <p className="page-subtitle">Regulatory changes, legal updates & compliance intelligence for Vietnam</p>
       </div>
 
       <div className="opp-grid">
-        {latestDaily && (
-          <DataPanel title={`🛠️ Latest Analysis — ${latestDaily.fields?.date || ""}`}>
+        {latest && (
+          <DataPanel title={`⚖️ Latest — ${latest.fields?.date || ""}`}>
             <div className="report-content markdown-body">
-              <div dangerouslySetInnerHTML={{ __html: latestDaily.html || "<p>No report available.</p>" }} />
+              <div dangerouslySetInnerHTML={{ __html: latest.html || "<p>No report available.</p>" }} />
             </div>
-            {latestDaily.fields?.slug && (
-              <Link to={latestDaily.fields.slug} className="view-all" style={{ marginTop: "12px", display: "inline-block" }}>
+            {latest.fields?.slug && (
+              <Link to={latest.fields.slug} className="view-all" style={{ marginTop: "12px", display: "inline-block" }}>
                 View full report →
               </Link>
             )}
@@ -32,13 +32,13 @@ const OpportunitiesPage = ({ data }) => {
 
         <div className="side-panels">
           {onDemand.length > 0 && (
-            <DataPanel title="🎯 On-Demand Deep Dives">
+            <DataPanel title="🔍 Special Analyses">
               <div className="report-list">
                 {onDemand.map((report) => (
                   <Link key={report.id} to={report.fields?.slug || "#"} className="report-list-item">
                     <span className="report-date">{report.fields?.date || "—"}</span>
                     <span className="report-title">
-                      {report.fields?.inferredTitle || "Analysis"}
+                      {report.fields?.inferredTitle || "Legal Analysis"}
                     </span>
                   </Link>
                 ))}
@@ -46,13 +46,13 @@ const OpportunitiesPage = ({ data }) => {
             </DataPanel>
           )}
 
-          <DataPanel title="📋 Daily Feasibility Reports">
+          <DataPanel title="📋 Daily Legal Briefings">
             <div className="report-list">
-              {daily.slice(0, 10).map((report) => (
+              {reports.slice(0, 12).map((report) => (
                 <Link key={report.id} to={report.fields?.slug || "#"} className="report-list-item">
                   <span className="report-date">{report.fields?.date || "—"}</span>
                   <span className="report-title">
-                    {report.fields?.inferredTitle || "Product Engineer Report"}
+                    {report.fields?.inferredTitle || "Legal Briefing"}
                   </span>
                 </Link>
               ))}
@@ -64,20 +64,20 @@ const OpportunitiesPage = ({ data }) => {
   );
 };
 
-export default OpportunitiesPage;
+export default LegalPage;
 
 export const Head = () => (
   <SEO
-    title="Plays & Opportunities — Bobbie Intelligence"
-    description="Scored solo developer opportunities: AI SaaS feasibility, market entry plays, and monetization strategies from autonomous Product Engineer analysis."
-    path="/opportunities/"
+    title="Vietnam Legal Watch — Bobbie Intelligence"
+    description="Daily Vietnamese legal and regulatory monitoring: new laws, decrees, circulars, and compliance changes tracked by autonomous AI agents."
+    path="/legal/"
   />
 );
 
 export const query = graphql`
-  query OpportunitiesPage {
+  query LegalPage {
     daily: allMarkdownRemark(
-      filter: { fields: { category: { eq: "product-engineer" }, reportType: { eq: "daily" } } }
+      filter: { fields: { category: { eq: "vn-legal-watch" }, reportType: { eq: "daily" } } }
       sort: { fields: { date: DESC } }
       limit: 15
     ) {
@@ -92,7 +92,7 @@ export const query = graphql`
       }
     }
     onDemand: allMarkdownRemark(
-      filter: { fields: { category: { eq: "product-engineer" }, reportType: { eq: "on-demand" } } }
+      filter: { fields: { category: { eq: "vn-legal-watch" }, reportType: { eq: "on-demand" } } }
       sort: { fields: { date: DESC } }
     ) {
       nodes {

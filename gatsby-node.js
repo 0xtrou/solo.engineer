@@ -41,6 +41,22 @@ function isOnDemand(filename, category) {
   return !isDailyName;
 }
 
+// Detect language from filename
+// .en.md → "en", .vi.md → "vi", plain .md → "en" (legacy)
+function detectLang(filename) {
+  if (filename.endsWith(".en.md")) return "en";
+  if (filename.endsWith(".vi.md")) return "vi";
+  return "en"; // legacy bare .md files
+}
+
+// Strip language suffix to get base filename for slug
+// "2026-05-05.en.md" → "2026-05-05", "2026-05-05.md" → "2026-05-05"
+function baseName(filename) {
+  return filename
+    .replace(/\.(en|vi)\.md$/, ".md")
+    .replace(/\.md$/, "");
+}
+
 exports.createSchemaCustomization = ({ actions }) => {
   const { createTypes } = actions;
   createTypes(`
@@ -57,6 +73,8 @@ exports.createSchemaCustomization = ({ actions }) => {
       date: String
       inferredTitle: String
       reportType: String
+      lang: String
+      baseName: String
     }
     type MarkdownRemarkFrontmatter {
       title: String
@@ -77,6 +95,8 @@ exports.createPages = async ({ graphql, actions }) => {
             slug
             category
             date
+            lang
+            baseName
           }
           frontmatter {
             title
@@ -97,17 +117,37 @@ exports.createPages = async ({ graphql, actions }) => {
     if (r.fields?.category) categories.add(r.fields.category);
   });
 
+  // Group by slug to create one page per base filename (not per language)
+  const slugGroups = {};
   reports.forEach((report) => {
     if (!report.fields?.slug) return;
+    const slug = report.fields.slug;
+    if (!slugGroups[slug]) slugGroups[slug] = { en: null, vi: null };
+    const lang = report.fields.lang || "en";
+    slugGroups[slug][lang] = report;
+  });
+
+  // Create one page per unique slug, passing both language variants
+  Object.entries(slugGroups).forEach(([slug, langs]) => {
+    const primary = langs.vi || langs.en;
+    if (!primary) return;
+
+    const enId = langs.en ? langs.en.id : null;
+    const viId = langs.vi ? langs.vi.id : null;
+
+    // We'll query the primary report via GraphQL, and pass the other language's ID
+    // so the template can query it too
     createPage({
-      path: report.fields.slug,
+      path: slug,
       component: path.resolve("./src/templates/report-detail.jsx"),
       context: {
-        id: report.id,
-        slug: report.fields.slug,
-        category: report.fields.category,
-        categoryLabel: CATEGORY_LABELS[report.fields.category] || report.fields.category,
-        categoryIcon: CATEGORY_ICONS[report.fields.category] || "📄",
+        id: primary.id,
+        slug: slug,
+        category: primary.fields?.category,
+        categoryLabel: CATEGORY_LABELS[primary.fields?.category] || primary.fields?.category,
+        categoryIcon: CATEGORY_ICONS[primary.fields?.category] || "📄",
+        enId: enId,
+        viId: viId,
       },
     });
   });
@@ -133,9 +173,15 @@ exports.onCreateNode = ({ node, actions }) => {
     const reportsMatch = fileAbsolutePath.match(/\/reports\/([^/]+)\//);
     const rawCategory = reportsMatch ? reportsMatch[1] : "uncategorized";
 
-    const fileMatch = fileAbsolutePath.match(/\/([^/]+)\.md$/);
-    const filename = fileMatch ? fileMatch[1] : "";
-    const dateMatch = filename.match(/^(\d{4}-\d{2}-\d{2})/);
+    // Extract full filename (with extension)
+    const fileMatch = fileAbsolutePath.match(/\/([^/]+)$/);
+    const fullFilename = fileMatch ? fileMatch[1] : "";
+
+    // Detect language and compute base name
+    const lang = detectLang(fullFilename);
+    const base = baseName(fullFilename);
+
+    const dateMatch = base.match(/^(\d{4}-\d{2}-\d{2})/);
     const date = dateMatch ? dateMatch[1] : "";
 
     const categoryLabel = CATEGORY_LABELS[rawCategory] || rawCategory;
@@ -152,8 +198,11 @@ exports.onCreateNode = ({ node, actions }) => {
     const h1Match = rawBody.match(/^#\s+(.+)$/m);
     const inferredTitle = fmTitle || (h1Match ? h1Match[1].trim() : "");
 
-    const reportType = fmType || (isOnDemand(filename + ".md", rawCategory) ? "on-demand" : "daily");
+    const reportType = fmType || (isOnDemand(fullFilename, rawCategory) ? "on-demand" : "daily");
     const reportDate = fmDate || date;
+
+    // Slug uses base name (no language suffix)
+    const slug = `/reports/${rawCategory}/${base}/`;
 
     createNodeField({ node, name: "category", value: rawCategory });
     createNodeField({ node, name: "categoryLabel", value: categoryLabel });
@@ -162,10 +211,8 @@ exports.onCreateNode = ({ node, actions }) => {
     createNodeField({ node, name: "date", value: reportDate });
     createNodeField({ node, name: "inferredTitle", value: inferredTitle });
     createNodeField({ node, name: "reportType", value: reportType });
-    createNodeField({
-      node,
-      name: "slug",
-      value: `/reports/${rawCategory}/${filename}/`,
-    });
+    createNodeField({ node, name: "lang", value: lang });
+    createNodeField({ node, name: "baseName", value: base });
+    createNodeField({ node, name: "slug", value: slug });
   }
 };

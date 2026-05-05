@@ -162,9 +162,18 @@ img { max-width: 100%; height: auto; }
   font-size: 0.75rem;
   color: var(--text-secondary);
   white-space: nowrap;
-  animation: ticker-scroll 30s linear infinite;
+  animation: ticker-scroll 45s linear infinite;
 }
 .ticker-sep { color: var(--text-muted); }
+.ticker-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.ticker-link:hover {
+  color: var(--accent-orange);
+  text-decoration: underline;
+}
 @keyframes ticker-scroll {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
@@ -538,9 +547,19 @@ img { max-width: 100%; height: auto; }
 .markdown-body hr { border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0; }
 
 /* ===== About / Opportunities / Markets Grids ===== */
-.about-grid, .opp-grid, .markets-grid {
+.about-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+.opp-grid, .markets-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+}
+.side-panels {
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
 }
 
@@ -623,14 +642,14 @@ img { max-width: 100%; height: auto; }
     grid-template-columns: 1fr;
   }
   .dashboard-sidebar { order: -1; }
-  .about-grid, .opp-grid, .markets-grid {
-    grid-template-columns: 1fr;
-  }
+  .about-grid { grid-template-columns: 1fr; }
+  .opp-grid, .markets-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {
   .header-nav { display: none; }
   .mobile-nav { display: flex; }
+  .logo-text { display: none !important; }
   .terminal-main {
     padding: 1rem;
     padding-bottom: calc(var(--mobile-nav-height) + 1rem);
@@ -643,7 +662,8 @@ img { max-width: 100%; height: auto; }
   .report-header h1 { font-size: 1.2rem; }
   .category-header { flex-wrap: wrap; }
   .report-meta { flex-wrap: wrap; gap: 0.75rem; }
-  .about-grid, .opp-grid, .markets-grid { grid-template-columns: 1fr; }
+  .about-grid { grid-template-columns: 1fr; }
+  .opp-grid, .markets-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 480px) {
@@ -818,6 +838,74 @@ img { max-width: 100%; height: auto; }
 @media (max-width: 768px) {
   .category-stats-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Language Switcher ===== */
+.header-lang-hint {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.report-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.report-header-row h1 {
+  flex: 1;
+  min-width: 0;
+}
+
+.lang-switcher {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+.lang-btn {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.lang-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+.lang-btn-active {
+  background: var(--accent-primary);
+  color: #000;
+  border-color: var(--accent-primary);
+  font-weight: 600;
+}
+
+.lang-badge {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .report-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .lang-switcher, .lang-badge {
+    align-self: flex-end;
+    margin-top: -0.5rem;
   }
 }
 
