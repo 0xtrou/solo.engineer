@@ -30,6 +30,17 @@ const CATEGORY_COLORS = {
   "concept-monetizer": "#22C55E",
 };
 
+// On-demand categories — spawned manually, not on cron
+const ON_DEMAND_CATEGORIES = ["concept-monetizer"];
+
+// On-demand filenames — non-standard patterns (not YYYY-MM-DD or YYYY-MM-DD-HHMM)
+function isOnDemand(filename, category) {
+  if (ON_DEMAND_CATEGORIES.includes(category)) return true;
+  // Daily patterns: YYYY-MM-DD.md, YYYY-MM-DD-HHMM.md, YYYY-MM-DD-XXXX.md
+  const isDailyName = /^\d{4}-\d{2}-\d{2}(-.*)?\.md$/.test(filename);
+  return !isDailyName;
+}
+
 exports.createSchemaCustomization = ({ actions }) => {
   const { createTypes } = actions;
   createTypes(`
@@ -45,6 +56,7 @@ exports.createSchemaCustomization = ({ actions }) => {
       categoryColor: String
       date: String
       inferredTitle: String
+      reportType: String
     }
     type MarkdownRemarkFrontmatter {
       title: String
@@ -135,12 +147,15 @@ exports.onCreateNode = ({ node, actions }) => {
     const h1Match = rawBody.match(/^#\s+(.+)$/m);
     const inferredTitle = h1Match ? h1Match[1].trim() : "";
 
+    const reportType = isOnDemand(filename + ".md", rawCategory) ? "on-demand" : "daily";
+
     createNodeField({ node, name: "category", value: rawCategory });
     createNodeField({ node, name: "categoryLabel", value: categoryLabel });
     createNodeField({ node, name: "categoryIcon", value: categoryIcon });
     createNodeField({ node, name: "categoryColor", value: categoryColor });
     createNodeField({ node, name: "date", value: date });
     createNodeField({ node, name: "inferredTitle", value: inferredTitle });
+    createNodeField({ node, name: "reportType", value: reportType });
     createNodeField({
       node,
       name: "slug",

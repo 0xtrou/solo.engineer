@@ -21,10 +21,35 @@ function getCategoryMeta(category) {
   return CATEGORY_META[category] || { label: category, icon: "📄", color: "#888888" };
 }
 
+function renderReportCard(report) {
+  const meta = getCategoryMeta(report.fields?.category || "");
+  const title = report.frontmatter?.title
+    || report.fields?.inferredTitle
+    || `${meta.label} — ${report.fields?.date || "Report"}`;
+  return (
+    <ReportCard
+      key={report.id}
+      slug={report.fields?.slug || ""}
+      category={report.fields?.category || ""}
+      date={report.fields?.date || ""}
+      title={title}
+      excerpt={report.excerpt || ""}
+      icon={meta.icon}
+      color={meta.color}
+    />
+  );
+}
+
 const IndexPage = ({ data }) => {
   const reports = data.allMarkdownRemark.nodes;
+
+  // Split daily vs on-demand
+  const dailyReports = reports.filter((r) => r.fields?.reportType !== "on-demand");
+  const onDemandReports = reports.filter((r) => r.fields?.reportType === "on-demand");
+
+  // Category groups (daily only for sidebar)
   const categoryGroups = {};
-  reports.forEach((r) => {
+  dailyReports.forEach((r) => {
     const cat = r.fields?.category || "uncategorized";
     if (!categoryGroups[cat]) categoryGroups[cat] = [];
     categoryGroups[cat].push(r);
@@ -43,32 +68,26 @@ const IndexPage = ({ data }) => {
           </section>
 
           <section className="dashboard-section">
-            <h2 className="section-title">📋 Recent Reports</h2>
+            <h2 className="section-title">📋 Daily Reports</h2>
+            <p className="section-subtitle">Automated daily intelligence from 7 analyst agents</p>
             <div className="report-grid">
-              {reports.slice(0, 30).map((report) => {
-                const meta = getCategoryMeta(report.fields?.category || "");
-                const title = report.frontmatter?.title
-                  || report.fields?.inferredTitle
-                  || `${meta.label} — ${report.fields?.date || "Report"}`;
-                return (
-                  <ReportCard
-                    key={report.id}
-                    slug={report.fields?.slug || ""}
-                    category={report.fields?.category || ""}
-                    date={report.fields?.date || ""}
-                    title={title}
-                    excerpt={report.excerpt || ""}
-                    icon={meta.icon}
-                    color={meta.color}
-                  />
-                );
-              })}
+              {dailyReports.slice(0, 20).map(renderReportCard)}
             </div>
           </section>
+
+          {onDemandReports.length > 0 && (
+            <section className="dashboard-section on-demand-section">
+              <h2 className="section-title">🎯 On-Demand Analysis</h2>
+              <p className="section-subtitle">Deep-dive research reports generated on request</p>
+              <div className="report-grid">
+                {onDemandReports.slice(0, 20).map(renderReportCard)}
+              </div>
+            </section>
+          )}
         </div>
 
         <div className="dashboard-sidebar">
-          <DataPanel title="🗂 Categories">
+          <DataPanel title="🗂 Daily Categories">
             <ul className="category-list">
               {sortedCategories.map(([cat, items]) => {
                 const meta = getCategoryMeta(cat);
@@ -84,18 +103,44 @@ const IndexPage = ({ data }) => {
               })}
             </ul>
           </DataPanel>
+
+          {onDemandReports.length > 0 && (
+            <DataPanel title="🎯 On-Demand Reports">
+              <ul className="category-list">
+                {onDemandReports.slice(0, 10).map((report) => {
+                  const meta = getCategoryMeta(report.fields?.category || "");
+                  const title = report.frontmatter?.title
+                    || report.fields?.inferredTitle
+                    || "Analysis";
+                  return (
+                    <li key={report.id}>
+                      <a href={report.fields?.slug || "#"} className="category-link">
+                        <span className="cat-icon">{meta.icon}</span>
+                        <span className="cat-label" title={title}>{title.length > 35 ? title.substring(0, 35) + "…" : title}</span>
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </DataPanel>
+          )}
+
           <DataPanel title="📊 Stats">
             <div className="stats-grid">
               <div className="stat-item">
                 <span className="stat-value">{reports.length}</span>
-                <span className="stat-label">Reports</span>
+                <span className="stat-label">Total Reports</span>
               </div>
               <div className="stat-item">
-                <span className="stat-value">{sortedCategories.length}</span>
-                <span className="stat-label">Categories</span>
+                <span className="stat-value">{dailyReports.length}</span>
+                <span className="stat-label">Daily</span>
               </div>
               <div className="stat-item">
-                <span className="stat-value">{reports[0]?.fields?.date || "—"}</span>
+                <span className="stat-value">{onDemandReports.length}</span>
+                <span className="stat-label">On-Demand</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-value">{dailyReports[0]?.fields?.date || "—"}</span>
                 <span className="stat-label">Latest</span>
               </div>
             </div>
@@ -118,7 +163,7 @@ export const Head = ({ data }) => (
 
 export const query = graphql`
   query IndexPage {
-    allMarkdownRemark(sort: { fields: { date: DESC } }, limit: 50) {
+    allMarkdownRemark(sort: { fields: { date: DESC } }) {
       nodes {
         id
         fields {
@@ -128,6 +173,7 @@ export const query = graphql`
           categoryIcon
           date
           inferredTitle
+          reportType
         }
         frontmatter {
           title
