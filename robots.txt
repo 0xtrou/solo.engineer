@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Sitemap: https://solo.engineer/sitemap-index.xml
+Host: https://solo.engineer
