@@ -1,0 +1,1 @@
+(self.webpackChunkdev_bundle_deals=self.webpackChunkdev_bundle_deals||[]).push([[454],{6454:function(){}}]);
