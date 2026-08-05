@@ -63,6 +63,7 @@ const researchSourceIds: SourceId[] = [
 ];
 
 const policySourceIds: SourceId[] = ["eu-regulation", "us-regulation", "vietnam-regulation", "world-bank"];
+const mobileSourceIds: SourceId[] = [...researchSourceIds, ...policySourceIds];
 
 function getInitials(author: string) {
   const initials = author
@@ -304,14 +305,17 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
         </aside>
 
         <section className="min-w-0 bg-[#fffdfb] px-5 sm:px-9 lg:px-11">
-          <header className="flex h-[58px] items-center justify-between border-b border-[#e7e8e2] lg:hidden">
-            <span className="font-display text-xl font-bold tracking-tight">signal</span>
-            <button className="rounded-md p-2 text-[#6c746f] hover:bg-[#f0f1ed]" onClick={() => refresh()} aria-label="Refresh feed"><RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} /></button>
+          <header className="flex h-[calc(58px+env(safe-area-inset-top))] items-center justify-between border-b border-[#e7e8e2] pt-[env(safe-area-inset-top)] lg:hidden">
+            <button className="flex items-center gap-2" onClick={() => { setActiveSource("all"); setShowSaved(false); }} aria-label="Show all signals">
+              <span className="relative grid h-5 w-5 place-items-center -rotate-12" aria-hidden="true"><i className="absolute h-[6px] w-[6px] -translate-x-1 translate-y-1 rounded-full bg-[#e8bd4d]" /><i className="absolute h-[6px] w-[6px] translate-x-1 translate-y-1 rounded-full bg-[#f27252]" /><i className="absolute h-[6px] w-[6px] -translate-y-1 rounded-full bg-[#263e52]" /></span>
+              <span className="font-display text-xl font-bold tracking-tight">signal</span>
+            </button>
+            <button className="rounded-md p-2 text-[#6c746f] hover:bg-[#f0f1ed] disabled:cursor-wait disabled:opacity-60" onClick={() => refresh()} disabled={isRefreshing} aria-label="Refresh feed"><RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} /></button>
           </header>
-          <div className="flex items-start justify-between gap-4 pb-6 pt-10 sm:pt-11">
+          <div className="flex items-start justify-between gap-4 pb-5 pt-8 sm:pb-6 sm:pt-11">
             <div>
               <p className="font-mono text-[10px] font-medium tracking-[.95px] text-[#8f9792]">PERSONAL WEB READER</p>
-              <h1 className="mt-2 font-display text-[29px] font-semibold tracking-[-1.1px] text-[#222725] sm:text-[31px]">Worth your attention <span className="font-sans text-[20px] text-[#e7af4a]">✦</span></h1>
+              <h1 className="mt-2 font-display text-[27px] font-semibold tracking-[-1.1px] text-[#222725] sm:text-[31px]">Worth your attention <span className="font-sans text-[20px] text-[#e7af4a]">✦</span></h1>
               <p className="mt-1.5 text-[13px] text-[#818883]">{loadedCount} live sources for research, technology, policy, and growth.</p>
             </div>
             <button className="mt-1 hidden items-center gap-1.5 rounded-md border border-[#dedfd9] bg-[#fffefa] px-2.5 py-1.5 text-[11px] font-medium text-[#717975] shadow-sm hover:border-[#cfd2cc] sm:flex" onClick={() => refresh()} disabled={isRefreshing}>
@@ -320,13 +324,23 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
           </div>
 
           <div className="flex h-11 items-center justify-between border-b border-[#e6e6e0]">
-            <nav className="flex h-full gap-6">
+            <nav className="tab-scroll -mx-5 flex h-full min-w-0 gap-6 overflow-x-auto px-5 sm:mx-0 sm:px-0" aria-label="Feed views">
               {([ ["focused", "Focused"], ["research", "Research & AI"], ["policy", "Policy & economy"] ] as const).map(([id, label]) => (
-                <button key={id} className={`tab-button ${activeTab === id ? "tab-button-active" : ""}`} onClick={() => setActiveTab(id)}>{label}</button>
+                <button key={id} className={`tab-button shrink-0 whitespace-nowrap ${activeTab === id ? "tab-button-active" : ""}`} onClick={() => setActiveTab(id)}>{label}</button>
               ))}
             </nav>
-            <button className="flex items-center gap-1.5 text-[11px] font-semibold text-[#818984] hover:text-[#3d4540]" onClick={() => notify("Use research, policy, and source filters to tune your feed") }><ChevronDown size={15} /> Tune</button>
+            <button className="ml-2 shrink-0 text-[11px] font-semibold text-[#818984] hover:text-[#3d4540] lg:flex lg:items-center lg:gap-1.5" onClick={() => notify("Use research, policy, and source filters to tune your feed") } aria-label="How to tune the feed"><ChevronDown size={15} className="lg:hidden" /><span className="hidden lg:inline">Tune</span></button>
           </div>
+
+          <nav className="tab-scroll -mx-5 flex gap-2 overflow-x-auto border-b border-[#e6e6e0] px-5 py-3 lg:hidden" aria-label="Filter feed by source">
+            <button className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${activeSource === "all" ? "border-[#263e52] bg-[#263e52] text-white" : "border-[#dde0da] bg-white text-[#59615c]"}`} onClick={() => { setActiveSource("all"); setShowSaved(false); }}>All</button>
+            {mobileSourceIds.map((source) => (
+              <button key={source} className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${activeSource === source ? "border-[#d76346] bg-[#fff2ed] text-[#a94833]" : "border-[#dde0da] bg-white text-[#59615c]"}`} onClick={() => { setActiveSource(source); setShowSaved(false); }}>
+                <span style={{ color: sourceMeta[source].accent }}><SourceMark source={source} size={13} /></span>
+                {sourceMeta[source].label}
+              </button>
+            ))}
+          </nav>
 
           {unavailableStatuses.length > 0 && (
             <div className="mt-4 flex gap-2 rounded-md border border-[#f0dfc9] bg-[#fff7eb] px-3 py-2 text-[11px] leading-4 text-[#856644]">
@@ -335,7 +349,7 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
             </div>
           )}
 
-          <div className="pb-10">
+          <div className="pb-28 pt-0 xl:pb-10">
             {visibleItems.map((item) => <FeedCard key={item.id} item={item} saved={saved.has(item.id)} upvoted={upvoted.has(item.id)} onToggleSave={toggleSave} onToggleVote={toggleVote} />)}
             {visibleItems.length === 0 && (
               <div className="grid place-items-center py-24 text-center">
@@ -371,13 +385,13 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
         </aside>
       </div>
 
-      <label className="fixed bottom-5 left-5 right-5 z-10 flex h-11 items-center gap-2 rounded-lg border border-[#e0e3de] bg-white px-3 shadow-lg xl:hidden lg:left-auto lg:right-5 lg:w-[290px]">
+      <label className="mobile-search fixed bottom-[env(safe-area-inset-bottom)] left-3 right-3 z-10 flex h-12 items-center gap-2 rounded-lg border border-[#e0e3de] bg-white px-3 shadow-lg sm:bottom-5 sm:left-5 sm:right-5 xl:hidden lg:left-auto lg:right-5 lg:w-[290px]">
         <Search size={17} className="text-[#8f9792]" />
-        <input className="min-w-0 flex-1 bg-transparent text-[12px] outline-none placeholder:text-[#9da39f]" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search your feed" />
+        <input className="min-w-0 flex-1 bg-transparent text-[12px] outline-none placeholder:text-[#9da39f]" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search your feed" aria-label="Search your feed" type="search" />
       </label>
 
       {toast && (
-        <div className="fixed bottom-[74px] left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-md bg-[#262d29] px-3.5 py-2.5 text-[12px] font-medium text-white shadow-xl xl:bottom-5">
+        <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-1/2 z-20 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-2 rounded-md bg-[#262d29] px-3.5 py-2.5 text-[12px] font-medium text-white shadow-xl xl:bottom-5" role="status" aria-live="polite">
           {toast.kind === "warning" ? <CircleAlert size={16} className="text-[#f0bf78]" /> : <Check size={16} className="text-[#83d59e]" />} {toast.message}
         </div>
       )}
