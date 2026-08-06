@@ -68,6 +68,19 @@ function tierColor(tier: TerminalSourceTier): string {
   }
 }
 
+function terminalTierRankForStatus(status: { tier?: TerminalSourceTier }): number {
+  switch (status.tier) {
+    case "T1 international":
+      return 0;
+    case "T2 trade":
+      return 1;
+    case "T3 state-media":
+      return 2;
+    default:
+      return 3;
+  }
+}
+
 function parseCategory(value: string | null): TerminalCategory | "all" {
   return categoryOrder.find((category) => categorySlug(category) === value) ?? "all";
 }
@@ -230,15 +243,30 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
   const regionalItems = useMemo(() => feed?.items.filter((item) => item.region === selectedRegion) ?? [], [feed, selectedRegion]);
   const regionalStatuses = useMemo(() => (feed?.statuses ?? getTerminalSourceStatuses()).filter((status) => status.region === selectedRegion), [feed, selectedRegion]);
   const visibleItems = useMemo(() => selectedCategory === "all" ? regionalItems : regionalItems.filter((item) => item.category === selectedCategory), [regionalItems, selectedCategory]);
-  const sources = useMemo(() => uniqueBy(regionalStatuses, (status) => status.sourceId), [regionalStatuses]);
+  const sources = useMemo(() => {
+    const byCount = new Map<string, number>();
+    for (const item of visibleItems) byCount.set(item.sourceId, (byCount.get(item.sourceId) ?? 0) + 1);
+    return uniqueBy(regionalStatuses, (status) => status.sourceId)
+      .map((source) => ({ source, count: byCount.get(source.sourceId) ?? 0 }))
+      .sort((left, right) => right.count - left.count
+        || terminalTierRankForStatus(left.source) - terminalTierRankForStatus(right.source)
+        || left.source.name.localeCompare(right.source.name))
+      .map((entry) => entry.source);
+  }, [regionalStatuses, visibleItems]);
   const liveSourceCount = sources.filter((source) => source.loaded).length;
   const hasVisibleData = visibleItems.length > 0;
   const categoryCounts = useMemo(() => new Map(categoryOrder.map((category) => [category, regionalItems.filter((item) => item.category === category).length])), [regionalItems]);
   const maxCategoryCount = Math.max(...categoryOrder.map((category) => categoryCounts.get(category) ?? 0), 1);
-  const sourceCapture = useMemo(() => sources.map((source) => ({
-    ...source,
-    count: visibleItems.filter((item) => item.sourceId === source.sourceId).length,
-  })).sort((left, right) => right.count - left.count || left.name.localeCompare(right.name)), [sources, visibleItems]);
+  const sourceCapture = useMemo(() => {
+    const byCount = new Map<string, number>();
+    for (const item of visibleItems) byCount.set(item.sourceId, (byCount.get(item.sourceId) ?? 0) + 1);
+    return sources.map((source) => ({
+      ...source,
+      count: byCount.get(source.sourceId) ?? 0,
+    })).sort((left, right) => right.count - left.count
+      || terminalTierRankForStatus(left) - terminalTierRankForStatus(right)
+      || left.name.localeCompare(right.name));
+  }, [sources, visibleItems]);
   const maxSourceCount = Math.max(...sourceCapture.map((source) => source.count), 1);
   const activityPoints = useMemo<ActivityPoint[]>(() => {
     const timestamps = visibleItems.flatMap((item) => item.publishedAt ? [Date.parse(item.publishedAt)] : []).filter((value) => Number.isFinite(value));

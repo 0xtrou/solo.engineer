@@ -1,4 +1,4 @@
-import { categorizeArticle, type Category } from "@/lib/categories";
+import { categorizeArticle, maxScore, type Category } from "@/lib/categories";
 
 export const terminalRegionIds = ["us", "vietnam", "china", "global"] as const;
 
@@ -576,6 +576,8 @@ export async function getTerminalFeed(): Promise<TerminalFeedResponse> {
 
   return {
     items: results.flatMap((result) => result.items).sort((left, right) => {
+      const score = maxScore(right.categoryScores ?? {}) - maxScore(left.categoryScores ?? {});
+      if (score !== 0) return score;
       const tierRank = terminalTierRank(left.tier) - terminalTierRank(right.tier);
       if (tierRank !== 0) return tierRank;
       const leftTime = left.publishedAt ? Date.parse(left.publishedAt) : 0;

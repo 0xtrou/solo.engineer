@@ -1,4 +1,4 @@
-import { scoreCategories } from "@/lib/categories";
+import { maxScore, scoreCategories } from "@/lib/categories";
 import type { FeedItem } from "@/lib/types";
 
 const professionalTerms = [
@@ -111,6 +111,8 @@ export function filterAndRank(items: FeedItem[]): FeedItem[] {
     .filter(isRelevant)
     .map((item) => (item.categoryScores ? item : { ...item, categoryScores: scoreCategories(searchableText(item)) }))
     .sort((left, right) => {
+      const score = maxScore(right.categoryScores ?? {}) - maxScore(left.categoryScores ?? {});
+      if (score !== 0) return score;
       const tier = sourceTierRank(left.tier) - sourceTierRank(right.tier);
       if (tier !== 0) return tier;
       return Date.parse(right.publishedAt) - Date.parse(left.publishedAt);

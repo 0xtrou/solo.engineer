@@ -55,10 +55,12 @@ export function categorizeArticle(
   return { category: best, scores };
 }
 
-export function maxScore(scores: Record<Category, number>): number {
+export function maxScore(scores: Partial<Record<Category, number>> | undefined): number {
+  if (!scores) return 0;
   let max = 0;
   for (const category of SHARED_CATEGORIES) {
-    if (scores[category] > max) max = scores[category];
+    const value = scores[category];
+    if (typeof value === "number" && value > max) max = value;
   }
   return max;
 }
