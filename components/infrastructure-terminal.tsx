@@ -14,6 +14,7 @@ import {
   Menu,
   Power,
   RefreshCw,
+  Search,
   ServerCog,
   X,
 } from "lucide-react";
@@ -213,6 +214,7 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
   const regionParam = searchParams.get("region");
   const selectedRegion: TerminalRegionId = isTerminalRegion(regionParam) ? regionParam : "us";
   const selectedCategory = parseCategory(searchParams.get("sector"));
+  const searchQuery = searchParams.get("q") ?? "";
 
   const terminalQuery = useQuery<TerminalFeedResponse>({
     queryKey: ["terminal-feed"],
@@ -224,10 +226,11 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
   });
 
   const feed = terminalQuery.data;
-  const updateSearch = useCallback((updates: { region?: TerminalRegionId; category?: TerminalCategory | "all" }) => {
+  const updateSearch = useCallback((updates: { region?: TerminalRegionId; category?: TerminalCategory | "all"; query?: string }) => {
     const next = new URLSearchParams(searchParams.toString());
     const region = updates.region ?? selectedRegion;
     const category = updates.category ?? selectedCategory;
+    const query = updates.query ?? searchQuery;
 
     if (region === "us") next.delete("region");
     else next.set("region", region);
@@ -235,14 +238,22 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
     if (category === "all") next.delete("sector");
     else next.set("sector", categorySlug(category));
 
-    const query = next.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-    setMobileMenuOpen(false);
-  }, [pathname, router, searchParams, selectedCategory, selectedRegion]);
+    if (query) next.set("q", query);
+    else next.delete("q");
+
+    const queryString = next.toString();
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+    if (updates.region || updates.category) setMobileMenuOpen(false);
+  }, [pathname, router, searchParams, selectedCategory, selectedRegion, searchQuery]);
 
   const regionalItems = useMemo(() => feed?.items.filter((item) => item.region === selectedRegion) ?? [], [feed, selectedRegion]);
   const regionalStatuses = useMemo(() => (feed?.statuses ?? getTerminalSourceStatuses()).filter((status) => status.region === selectedRegion), [feed, selectedRegion]);
-  const visibleItems = useMemo(() => selectedCategory === "all" ? regionalItems : regionalItems.filter((item) => item.category === selectedCategory), [regionalItems, selectedCategory]);
+  const visibleItems = useMemo(() => {
+    const byCategory = selectedCategory === "all" ? regionalItems : regionalItems.filter((item) => item.category === selectedCategory);
+    if (!searchQuery.trim()) return byCategory;
+    const needle = searchQuery.trim().toLowerCase();
+    return byCategory.filter((item) => `${item.title} ${item.summary ?? ""} ${item.sourceName}`.toLowerCase().includes(needle));
+  }, [regionalItems, selectedCategory, searchQuery]);
   const sources = useMemo(() => {
     const byCount = new Map<string, number>();
     for (const item of visibleItems) byCount.set(item.sourceId, (byCount.get(item.sourceId) ?? 0) + 1);
@@ -344,6 +355,26 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
                 );
               })}
             </nav>
+          </div>
+
+          <div className="mt-7 border-t border-[#203040] pt-6">
+            <p className="terminal-label">SEARCH RECORDS</p>
+            <label className="mt-2 flex h-9 items-center gap-2 rounded border border-[#223547] bg-[#0b1b27] px-2.5 text-[#7d8b9c] focus-within:border-[#3a5a72]">
+              <Search size={15} className="shrink-0 text-[#5f7080]" />
+              <input
+                className="min-w-0 flex-1 bg-transparent text-[12px] font-medium text-[#cfe0ee] outline-none placeholder:text-[#4a5b6d]"
+                value={searchQuery}
+                onChange={(event) => updateSearch({ query: event.target.value })}
+                placeholder="Filter by title, source, keyword"
+                aria-label="Filter terminal records"
+                type="search"
+              />
+              {searchQuery && (
+                <button className="shrink-0 text-[#5f7080] hover:text-[#cfe0ee]" onClick={() => updateSearch({ query: "" })} aria-label="Clear search">
+                  <X size={14} />
+                </button>
+              )}
+            </label>
           </div>
 
           <div className="mt-7 border-t border-[#203040] pt-6">
