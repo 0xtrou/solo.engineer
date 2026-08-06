@@ -65,4 +65,15 @@ test.describe("live AI infrastructure terminal", () => {
       expect(await cards.evaluateAll((elements) => elements.every((element) => element.getAttribute("data-category") === "power-and-grid"))).toBe(true);
     }
   });
+
+  test("renders live telemetry and sticky desktop sidebars", async ({ page }) => {
+    await page.goto("/terminal");
+
+    await expect(page.getByTestId("terminal-telemetry")).toBeVisible();
+    await expect(page.getByTestId("terminal-activity-chart")).toBeVisible();
+    await expect(page.getByTestId("terminal-category-chart")).toBeVisible();
+    await expect(page.getByTestId("terminal-source-chart")).toBeVisible();
+    await expect(page.getByTestId("terminal-left-sidebar")).toHaveCSS("position", "sticky");
+    await expect(page.getByTestId("terminal-right-sidebar")).toHaveCSS("position", "sticky");
+  });
 });

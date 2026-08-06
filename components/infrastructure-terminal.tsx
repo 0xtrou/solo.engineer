@@ -135,6 +135,43 @@ function ArticleRow({ article }: { article: TerminalArticle }) {
   );
 }
 
+type ActivityPoint = { label: string; count: number };
+
+function ActivityChart({ points }: { points: ActivityPoint[] }) {
+  const width = 360;
+  const height = 96;
+  const padding = { top: 10, right: 8, bottom: 22, left: 8 };
+  const maximum = Math.max(...points.map((point) => point.count), 1);
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+  const plotPoints = points.map((point, index) => {
+    const x = padding.left + (chartWidth * index) / Math.max(points.length - 1, 1);
+    const y = padding.top + chartHeight - (point.count / maximum) * chartHeight;
+    return { ...point, x, y };
+  });
+  const line = plotPoints.map((point) => `${point.x},${point.y}`).join(" ");
+  const area = plotPoints.length
+    ? `M ${plotPoints[0].x} ${height - padding.bottom} L ${plotPoints.map((point) => `${point.x} ${point.y}`).join(" L ")} L ${plotPoints.at(-1)?.x} ${height - padding.bottom} Z`
+    : "";
+
+  return (
+    <div className="mt-4" data-testid="terminal-activity-chart">
+      <svg className="h-[116px] w-full overflow-visible" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label="Seven-day record cadence">
+        {[0, 0.5, 1].map((ratio) => {
+          const y = padding.top + chartHeight * ratio;
+          return <line key={ratio} x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke="#223a4d" strokeDasharray="3 4" />;
+        })}
+        {area && <path d={area} fill="rgba(99, 220, 167, 0.13)" />}
+        {line && <polyline points={line} fill="none" stroke="#67dca8" strokeWidth="2" vectorEffect="non-scaling-stroke" />}
+        {plotPoints.map((point) => <circle key={point.label} cx={point.x} cy={point.y} r="2.5" fill="#9af0ca" vectorEffect="non-scaling-stroke" />)}
+        {plotPoints.map((point, index) => (
+          <text key={point.label} x={point.x} y={height - 5} textAnchor={index === 0 ? "start" : index === plotPoints.length - 1 ? "end" : "middle"} fill="#71869a" fontSize="8">{point.label}</text>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
 export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -176,6 +213,32 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
   const sources = useMemo(() => uniqueBy(regionalStatuses, (status) => status.sourceId), [regionalStatuses]);
   const liveSourceCount = sources.filter((source) => source.loaded).length;
   const hasVisibleData = visibleItems.length > 0;
+  const categoryCounts = useMemo(() => new Map(categoryOrder.map((category) => [category, regionalItems.filter((item) => item.category === category).length])), [regionalItems]);
+  const maxCategoryCount = Math.max(...categoryOrder.map((category) => categoryCounts.get(category) ?? 0), 1);
+  const sourceCapture = useMemo(() => sources.map((source) => ({
+    ...source,
+    count: visibleItems.filter((item) => item.sourceId === source.sourceId).length,
+  })).sort((left, right) => right.count - left.count || left.name.localeCompare(right.name)), [sources, visibleItems]);
+  const maxSourceCount = Math.max(...sourceCapture.map((source) => source.count), 1);
+  const activityPoints = useMemo<ActivityPoint[]>(() => {
+    const timestamps = visibleItems.flatMap((item) => item.publishedAt ? [Date.parse(item.publishedAt)] : []).filter((value) => Number.isFinite(value));
+    if (!timestamps.length) {
+      return Array.from({ length: 7 }, (_, index) => ({ label: index === 6 ? "Now" : `D-${6 - index}`, count: 0 }));
+    }
+
+    const latest = Math.max(...timestamps);
+    const dayMs = 24 * 60 * 60 * 1_000;
+
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(latest - (6 - index) * dayMs);
+      const start = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+      const end = start + dayMs;
+      return {
+        label: new Intl.DateTimeFormat("en", { day: "2-digit", month: "short", timeZone: "UTC" }).format(date),
+        count: timestamps.filter((timestamp) => timestamp >= start && timestamp < end).length,
+      };
+    });
+  }, [visibleItems]);
 
   return (
     <main className="terminal-shell min-h-screen bg-[#071018] text-[#dfe7f0]" data-testid="terminal-shell">
@@ -202,8 +265,8 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-[1680px] grid-cols-1 lg:grid-cols-[252px_minmax(0,1fr)]">
-        <aside className={`${mobileMenuOpen ? "block" : "hidden"} border-b border-[#203040] bg-[#08121b] px-4 py-5 lg:block lg:min-h-[calc(100vh-58px)] lg:border-b-0 lg:border-r lg:px-5`}>
+      <div className="mx-auto grid max-w-[1680px] grid-cols-1 lg:items-start lg:grid-cols-[252px_minmax(0,1fr)]">
+        <aside className={`${mobileMenuOpen ? "block" : "hidden"} border-b border-[#203040] bg-[#08121b] px-4 py-5 lg:sticky lg:top-[58px] lg:block lg:h-[calc(100vh-58px)] lg:overflow-y-auto lg:overscroll-contain lg:border-b-0 lg:border-r lg:px-5`} data-testid="terminal-left-sidebar">
           <p className="terminal-label">REGION</p>
           <nav className="mt-2 space-y-1" aria-label="Infrastructure regions">
             {terminalRegionIds.map((region) => (
@@ -279,6 +342,48 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
             })}
           </div>
 
+          <section className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(260px,.9fr)_minmax(250px,.85fr)]" aria-label="Live telemetry" data-testid="terminal-telemetry">
+            <section className="border border-[#223547] bg-[#09141e] p-4 sm:p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="terminal-label">RECORD CADENCE</p>
+                  <p className="mt-1 text-[12px] text-[#9fb0c2]">Published records across latest seven source days.</p>
+                </div>
+                <span className="font-mono text-[18px] text-[#e9f3fa]">{visibleItems.length}</span>
+              </div>
+              <ActivityChart points={activityPoints} />
+            </section>
+
+            <section className="border border-[#223547] bg-[#09141e] p-4 sm:p-5" data-testid="terminal-category-chart">
+              <p className="terminal-label">SECTOR MIX</p>
+              <p className="mt-1 text-[12px] text-[#9fb0c2]">Visible records by sector.</p>
+              <div className="mt-4 space-y-3">
+                {categoryOrder.map((category) => {
+                  const count = categoryCounts.get(category) ?? 0;
+                  return (
+                    <button key={category} className="block w-full text-left" onClick={() => updateSearch({ category })} aria-label={`Filter to ${category}: ${count} records`}>
+                      <span className="flex items-center justify-between gap-3 text-[11px] text-[#b5c4d1]"><span className="truncate">{category}</span><span className="font-mono text-[#dce8f1]">{count}</span></span>
+                      <span className="mt-1.5 block h-1.5 overflow-hidden bg-[#172b3b]"><span className="block h-full bg-[#64dca8] transition-[width] duration-300" style={{ width: `${(count / maxCategoryCount) * 100}%` }} /></span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="border border-[#223547] bg-[#09141e] p-4 sm:p-5" data-testid="terminal-source-chart">
+              <p className="terminal-label">SOURCE CAPTURE</p>
+              <p className="mt-1 text-[12px] text-[#9fb0c2]">Records from live regional adapters.</p>
+              <div className="mt-4 space-y-3">
+                {sourceCapture.length ? sourceCapture.map((source) => (
+                  <div key={source.sourceId}>
+                    <span className="flex items-center justify-between gap-3 text-[11px] text-[#b5c4d1]"><span className="flex min-w-0 items-center gap-1.5 truncate"><span className={source.loaded ? "terminal-status-dot terminal-status-dot-live" : "terminal-status-dot terminal-status-dot-error"} />{source.name}</span><span className="font-mono text-[#dce8f1]">{source.count}</span></span>
+                    <span className="mt-1.5 block h-1.5 overflow-hidden bg-[#172b3b]"><span className={source.loaded ? "block h-full bg-[#73aefa] transition-[width] duration-300" : "block h-full bg-[#ff9079] transition-[width] duration-300"} style={{ width: `${(source.count / maxSourceCount) * 100}%` }} /></span>
+                  </div>
+                )) : <p className="text-[12px] leading-5 text-[#7e92a4]">Waiting for source records.</p>}
+              </div>
+            </section>
+          </section>
+
           <div className="mt-7 grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
             <section className="border border-[#223547] bg-[#09141e]" aria-live="polite">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#203040] px-4 py-3.5 sm:px-5">
@@ -301,7 +406,7 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
               )}
             </section>
 
-            <aside className="space-y-5">
+            <aside className="space-y-5 xl:sticky xl:top-[78px] xl:max-h-[calc(100vh-98px)] xl:overflow-y-auto xl:overscroll-contain xl:pr-1" data-testid="terminal-right-sidebar">
               <section className="border border-[#223547] bg-[#09141e] p-4">
                 <p className="terminal-label">SOURCE HEALTH</p>
                 <div className="mt-4 space-y-3">

@@ -342,8 +342,8 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
 
   return (
     <main className="min-h-screen bg-[#f7f8f5] text-[#202426]">
-      <div className="mx-auto grid min-h-screen max-w-[1480px] grid-cols-1 lg:grid-cols-[236px_minmax(570px,1fr)] xl:grid-cols-[236px_minmax(570px,1fr)_340px]">
-        <aside className="hidden min-h-screen border-r border-[#e4e6e1] bg-[#fbfcfa] px-[18px] py-7 lg:flex lg:flex-col">
+      <div className="mx-auto grid min-h-screen max-w-[1480px] grid-cols-1 lg:items-start lg:grid-cols-[236px_minmax(570px,1fr)] xl:grid-cols-[236px_minmax(570px,1fr)_340px]">
+        <aside className="hidden min-h-screen border-r border-[#e4e6e1] bg-[#fbfcfa] px-[18px] py-7 lg:sticky lg:top-0 lg:flex lg:h-screen lg:overflow-y-auto lg:overscroll-contain lg:flex-col" data-testid="feed-left-sidebar">
           <button className="flex items-center gap-2.5 px-3 text-[25px] font-bold tracking-[-1.3px]" onClick={resetFilters} aria-label="Show all signals">
             <span className="relative grid h-6 w-6 place-items-center -rotate-12"><i className="absolute h-[7px] w-[7px] -translate-x-1.5 translate-y-1.5 rounded-full bg-[#e8bd4d]" /><i className="absolute h-[7px] w-[7px] translate-x-1.5 translate-y-1.5 rounded-full bg-[#f27252]" /><i className="absolute h-[7px] w-[7px] -translate-y-1.5 rounded-full bg-[#263e52]" /></span>
             <span className="font-display">signal</span>
@@ -443,7 +443,7 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
           </div>
         </section>
 
-        <aside className="hidden bg-[#f8f9f6] px-6 py-7 xl:block">
+        <aside className="hidden bg-[#f8f9f6] px-6 py-7 xl:sticky xl:top-0 xl:block xl:h-screen xl:overflow-y-auto xl:overscroll-contain" data-testid="feed-right-sidebar">
           <label className="flex h-9 items-center gap-2 rounded-md border border-[#e2e4df] bg-white px-2.5 text-[#a0a6a2] shadow-sm">
             <Search size={17} />
             <input className="min-w-0 flex-1 bg-transparent text-[12px] font-medium text-[#444] outline-none placeholder:text-[#9da39f]" value={filters.query} onChange={(event) => updateFilters({ query: event.target.value })} placeholder="Search your feed" aria-label="Search your feed" type="search" />
