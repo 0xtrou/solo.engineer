@@ -52,6 +52,14 @@ export const feedSourceIds = [
 
 export type FeedSourceId = (typeof feedSourceIds)[number];
 
+export const feedCategoryLabels = [
+  "Power & grid",
+  "Policy & controls",
+  "Hardware & compute",
+  "Capital & costs",
+  "Technology & research",
+] as const;
+
 export const feedItemSchema = z.object({
   id: z.string().min(1),
   source: z.enum(feedSourceIds),
@@ -65,6 +73,8 @@ export const feedItemSchema = z.object({
   score: z.number().int().optional(),
   comments: z.number().int().optional(),
   tag: z.string().optional(),
+  tier: z.enum(["T1", "T2", "T3"]).optional(),
+  categoryScores: z.record(z.enum(feedCategoryLabels), z.number()).optional(),
 });
 
 export type FeedItem = z.infer<typeof feedItemSchema>;

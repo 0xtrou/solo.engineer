@@ -1,3 +1,5 @@
+import type { Category } from "@/lib/categories";
+
 export const SOURCE_IDS = [
   "arxiv",
   "hacker-news",
@@ -66,6 +68,7 @@ export type FeedItem = {
   comments?: number;
   tag?: string;
   tier?: SourceTier;
+  categoryScores?: Record<Category, number>;
 };
 
 export type SourceStatus = {

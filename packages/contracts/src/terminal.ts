@@ -33,6 +33,7 @@ export const terminalSourceIds = [
   "federal-register-bis",
   "nist-chips",
   "federal-reserve",
+  "nsf",
   "vietnam-government",
   "vietnam-science-technology",
   "evn",
@@ -66,6 +67,7 @@ export const terminalArticleSchema = z.object({
   publishedAt: z.string().datetime().optional(),
   summary: z.string().optional(),
   tier: z.enum(terminalSourceTiers).optional(),
+  categoryScores: z.record(z.enum(terminalCategoryLabels), z.number()).optional(),
 });
 
 export type TerminalArticle = z.infer<typeof terminalArticleSchema>;

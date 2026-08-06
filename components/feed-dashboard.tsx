@@ -38,6 +38,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchFeed } from "@/lib/client/feed-api";
+import { CategoryScores } from "@/components/category-scores";
 import {
   defaultFeedFilters,
   getFeedCategorySlug,
@@ -201,6 +202,11 @@ function FeedCard({ item, saved, upvoted, onToggleSave, onToggleVote }: {
             <button className="mt-1 flex items-center gap-0.5 text-[11px] font-semibold text-[#d76346] hover:text-[#b94e37]" onClick={() => setExpanded((value) => !value)}>
               {expanded ? "Show less" : "Read more"} <ChevronRight size={14} className={expanded ? "rotate-90" : ""} />
             </button>
+          )}
+          {item.categoryScores && (
+            <div className="mt-2">
+              <CategoryScores scores={item.categoryScores} testId="feed-category-scores" activeColor="#d76346" mutedColor="#9aa09b" />
+            </div>
           )}
           <div className="mt-3 flex items-center gap-4 text-[#929994]">
             <div className="flex items-center gap-1.5">

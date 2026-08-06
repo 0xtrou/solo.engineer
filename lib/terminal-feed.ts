@@ -1,7 +1,9 @@
+import { categorizeArticle, type Category } from "@/lib/categories";
+
 export const terminalRegionIds = ["us", "vietnam", "china", "global"] as const;
 
 export type TerminalRegionId = (typeof terminalRegionIds)[number];
-export type TerminalCategory = "Power & grid" | "Policy & controls" | "Hardware & compute" | "Capital & costs" | "Technology & research";
+export type TerminalCategory = Category;
 export type TerminalSourceTier = "T1 international" | "T2 trade" | "T3 state-media";
 
 export type TerminalArticle = {
@@ -16,6 +18,7 @@ export type TerminalArticle = {
   publishedAt?: string;
   summary?: string;
   tier?: TerminalSourceTier;
+  categoryScores?: Record<Category, number>;
 };
 
 export type TerminalSourceStatus = {
@@ -82,6 +85,15 @@ const sourceDefinitions = {
     name: "Federal Reserve",
     homepage: "https://www.federalreserve.gov/",
     endpoint: "https://www.federalreserve.gov/feeds/press_monetary.xml",
+  },
+  nsf: {
+    sourceId: "nsf",
+    region: "us",
+    category: "Technology & research",
+    tier: "T1 international",
+    name: "National Science Foundation",
+    homepage: "https://new.nsf.gov/news",
+    endpoint: "https://www.nsf.gov/rss/rss_www_news.xml",
   },
   vietnamGovernment: {
     sourceId: "vietnam-government",
@@ -249,6 +261,7 @@ const sourceDefinitions = {
 
 const relevanceTerms: Partial<Record<string, string[]>> = {
   eia: ["electricity", "power", "grid", "load", "generation", "data center", "battery", "transmission", "lng", "natural gas"],
+  nsf: ["ai", "artificial intelligence", "compute", "computing", "research", "infrastructure", "data", "cyberinfrastructure", "chip", "semiconductor", "quantum", "robotics", "model", "machine learning", "hpc", "supercomput"],
   "vietnam-government": ["trí tuệ nhân tạo", "chuyển đổi số", "dữ liệu", "bán dẫn", "vi mạch", "công nghệ số", "công nghệ chiến lược", "năng lượng", "điện lực", "lưới điện", "hạ tầng số", "viễn thông", "an ninh mạng"],
   "vietnam-science-technology": ["trí tuệ nhân tạo", "chuyển đổi số", "dữ liệu", "bán dẫn", "vi mạch", "công nghệ số", "công nghệ chiến lược", "hạ tầng số", "viễn thông"],
   moit: ["energy", "electricity", "power", "grid", "semiconductor", "data center", "digital transformation", "renewable", "transmission"],
@@ -268,28 +281,6 @@ const relevanceTerms: Partial<Record<string, string[]>> = {
 };
 
 const titleOnlyRelevanceSources = new Set(["eia", "vietnam-government", "vietnam-science-technology", "moit", "vietnamplus", "vnexpress"]);
-
-const categoryKeywords: Record<TerminalCategory, string[]> = {
-  "Power & grid": ["power", "electricity", "grid", "energy", "generation", "transmission", "battery", "storage", "lng", "natural gas", "nuclear", "solar", "wind", "substation", "transformer", "turbine", "renewable", "电力", "能源", "电网", "储能", "风电", "光伏", "核电", "điện", "điện lực", "lưới điện", "năng lượng", "năng lượng tái tạo", "cooling", "hyperscale", "submarine", "colocation"],
-  "Policy & controls": ["policy", "regulation", "rule", "ban", "export control", "sanction", "tariff", "compliance", "directive", "order", "federal register", "cybersecurity", "privacy", "antitrust", "approval", "law", "政策", "监管", "管制", "出口", "禁令", "反垄断", "chính sách", "quy định", "cấm", "chống độc quyền"],
-  "Hardware & compute": ["chip", "semiconductor", "gpu", "cpu", "tpu", "wafer", "fab", "foundry", "node", "transistor", "memory", "hbm", "tsmc", "samsung", "sk hynix", "micron", "smic", "huawei", "nvidia", "intel", "amd", "芯片", "半导体", "集成电路", "算力", "bán dẫn", "vi mạch", "colo"],
-  "Capital & costs": ["billion", "million", "funding", "raise", "ipo", "investment", "capex", "valuation", "venture", "vc", "deal", "cost", "price", "fdi", "factory", "industrial park", "投资", "融资", "亿元", "đầu tư", "vốn", "kêu gọi"],
-  "Technology & research": ["ai ", "ai,", "ai.", "artificial intelligence", "llm", "model", "training", "inference", "algorithm", "research", "r&d", "breakthrough", "openai", "deepmind", "deepseek", "transformer", "robotics", "人工智能", "模型", "研发", "深度求索", "trí tuệ nhân tạo", "chuyển đổi số", "công nghệ", "đổi mới"],
-};
-
-function categorizeArticle(title: string, summary: string | undefined, fallback: TerminalCategory): TerminalCategory {
-  const text = `${title} ${summary ?? ""}`.toLowerCase();
-  let best = fallback;
-  let bestScore = 0;
-  for (const [category, terms] of Object.entries(categoryKeywords)) {
-    const score = terms.reduce((acc, term) => acc + (text.includes(term) ? 1 : 0), 0);
-    if (score > bestScore) {
-      bestScore = score;
-      best = category as TerminalCategory;
-    }
-  }
-  return best;
-}
 
 function stripHtml(value: string | undefined): string {
   return decodeEntities((value ?? "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]*>/g, " "))
@@ -476,10 +467,12 @@ function toArticles(source: SourceDefinition, entries: RssEntry[], limit = 5): T
     const identity = `${entry.title}:${entry.url}`;
     if (seen.has(identity)) return [];
     seen.add(identity);
+    const { category, scores } = categorizeArticle(entry.title, entry.summary, source.category);
     return [{
       id: `${source.sourceId}:${entry.url}`,
       region: source.region,
-      category: categorizeArticle(entry.title, entry.summary, source.category),
+      category,
+      categoryScores: scores,
       sourceId: source.sourceId,
       sourceName: source.name,
       sourceHomepage: source.homepage,
@@ -507,6 +500,7 @@ const adapters: Adapter[] = [
   { source: sourceDefinitions.federalRegister, load: getFederalRegisterEntries },
   { source: sourceDefinitions.nistChips, load: async () => getNistEntries(await fetchText(sourceDefinitions.nistChips.endpoint)) },
   { source: sourceDefinitions.federalReserve, load: async () => parseRss(await fetchText(sourceDefinitions.federalReserve.endpoint), sourceDefinitions.federalReserve.homepage) },
+  { source: sourceDefinitions.nsf, load: async () => parseRss(await fetchText(sourceDefinitions.nsf.endpoint), sourceDefinitions.nsf.homepage) },
   { source: sourceDefinitions.vietnamGovernment, load: async () => parseRss(await fetchText(sourceDefinitions.vietnamGovernment.endpoint), sourceDefinitions.vietnamGovernment.homepage) },
   { source: sourceDefinitions.vietnamScience, load: async () => parseRss(await fetchText(sourceDefinitions.vietnamScience.endpoint), sourceDefinitions.vietnamScience.homepage) },
   { source: sourceDefinitions.evn, load: getEvnEntries },

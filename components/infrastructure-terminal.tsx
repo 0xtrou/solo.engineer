@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { CategoryScores } from "@/components/category-scores";
 import {
   Activity,
   ArrowUpRight,
@@ -144,6 +145,11 @@ function ArticleRow({ article }: { article: TerminalArticle }) {
           <ExternalLink className="ml-2 inline-block -translate-y-px" size={14} aria-hidden="true" />
         </a>
         {article.summary && <p className="mt-2 max-w-4xl text-[13px] leading-5 text-[#a3b0c1]">{article.summary}</p>}
+        {article.categoryScores && (
+          <div className="mt-2">
+            <CategoryScores scores={article.categoryScores} testId="terminal-category-scores" activeColor="#60d7a5" mutedColor="#5f7080" />
+          </div>
+        )}
       </div>
     </article>
   );
@@ -196,8 +202,8 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
   const selectedCategory = parseCategory(searchParams.get("sector"));
 
   const terminalQuery = useQuery<TerminalFeedResponse>({
-    queryKey: ["terminal-feed", { region: selectedRegion, category: selectedCategory }],
-    queryFn: ({ signal }) => fetchTerminal({ region: selectedRegion, category: selectedCategory === "all" ? "all" : categorySlug(selectedCategory) }, signal),
+    queryKey: ["terminal-feed"],
+    queryFn: ({ signal }) => fetchTerminal(signal),
     initialData: initialFeed,
     placeholderData: (previous) => previous,
     refetchInterval: 300_000,

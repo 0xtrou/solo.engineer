@@ -1,3 +1,4 @@
+import { scoreCategories } from "@/lib/categories";
 import type { FeedItem } from "@/lib/types";
 
 const professionalTerms = [
@@ -106,9 +107,12 @@ function sourceTierRank(tier: FeedItem["tier"]): number {
 }
 
 export function filterAndRank(items: FeedItem[]): FeedItem[] {
-  return items.filter(isRelevant).sort((left, right) => {
-    const tier = sourceTierRank(left.tier) - sourceTierRank(right.tier);
-    if (tier !== 0) return tier;
-    return Date.parse(right.publishedAt) - Date.parse(left.publishedAt);
-  });
+  return items
+    .filter(isRelevant)
+    .map((item) => (item.categoryScores ? item : { ...item, categoryScores: scoreCategories(searchableText(item)) }))
+    .sort((left, right) => {
+      const tier = sourceTierRank(left.tier) - sourceTierRank(right.tier);
+      if (tier !== 0) return tier;
+      return Date.parse(right.publishedAt) - Date.parse(left.publishedAt);
+    });
 }

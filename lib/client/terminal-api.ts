@@ -1,3 +1,4 @@
+import { scoreCategories } from "@/lib/categories";
 import { isTerminalRegion, type TerminalArticle, TerminalFeedResponse, type TerminalCategory } from "@/lib/terminal-feed";
 
 type CanonicalTerminal = { data: Array<{ id: string; sourceId: string; title: string; excerpt?: string | null; canonicalUrl: string; publishedAt: string; category?: string | null; region?: string | null }>; overview: { sourceHealth: Array<{ sourceId: string; name: string; homepageUrl: string; endpointUrl: string; region?: string | null; category?: string | null; lastSuccessAt?: string | null; lastItemCount?: number; lastError?: string | null }> }; asOf: string };
@@ -17,7 +18,7 @@ function fromCanonical(payload: CanonicalTerminal): TerminalFeedResponse {
     if (!source || !isTerminalRegion(region)) return [];
     const category = categories[record.category ?? ""];
     if (!category) return [];
-    return [{ id: record.id, region, category, sourceId: record.sourceId, sourceName: source.name, sourceHomepage: source.homepageUrl, title: record.title, url: record.canonicalUrl, publishedAt: record.publishedAt, summary: record.excerpt ?? undefined }];
+    return [{ id: record.id, region, category, categoryScores: scoreCategories(`${record.title} ${record.excerpt ?? ""}`), sourceId: record.sourceId, sourceName: source.name, sourceHomepage: source.homepageUrl, title: record.title, url: record.canonicalUrl, publishedAt: record.publishedAt, summary: record.excerpt ?? undefined }];
   });
   return {
     items,
@@ -31,11 +32,8 @@ function fromCanonical(payload: CanonicalTerminal): TerminalFeedResponse {
   };
 }
 
-export async function fetchTerminal(params: { region: string; category: string }, signal?: AbortSignal): Promise<TerminalFeedResponse> {
-  const search = new URLSearchParams();
-  if (params.region !== "all") search.set("region", params.region);
-  if (params.category !== "all") search.set("category", params.category);
-  const response = await fetch(`/api/terminal?${search.toString()}`, { signal, cache: "no-store" });
+export async function fetchTerminal(signal?: AbortSignal): Promise<TerminalFeedResponse> {
+  const response = await fetch("/api/terminal", { signal, cache: "no-store" });
   if (!response.ok) throw new Error("Terminal request failed");
   const payload = await response.json() as TerminalFeedResponse | CanonicalTerminal;
   return "overview" in payload ? fromCanonical(payload) : payload;
