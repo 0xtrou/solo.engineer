@@ -14,7 +14,9 @@ npm run build
 pm2 startOrReload ecosystem.config.cjs --only solo-engineer --update-env
 pm2 save --force
 
-for attempt in {1..20}; do
+sleep 2
+
+for attempt in {1..60}; do
   if curl --fail --silent --show-error http://127.0.0.1:3002/api/health; then
     exit 0
   fi
