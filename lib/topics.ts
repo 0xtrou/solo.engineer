@@ -99,6 +99,16 @@ export function isRelevant(item: FeedItem): boolean {
   return containsProfessionalTopic(text);
 }
 
+const tierRank: Record<"T1" | "T2" | "T3", number> = { T1: 0, T2: 1, T3: 2 };
+
+function sourceTierRank(tier: FeedItem["tier"]): number {
+  return tier ? tierRank[tier] : 3;
+}
+
 export function filterAndRank(items: FeedItem[]): FeedItem[] {
-  return items.filter(isRelevant).sort((left, right) => Date.parse(right.publishedAt) - Date.parse(left.publishedAt));
+  return items.filter(isRelevant).sort((left, right) => {
+    const tier = sourceTierRank(left.tier) - sourceTierRank(right.tier);
+    if (tier !== 0) return tier;
+    return Date.parse(right.publishedAt) - Date.parse(left.publishedAt);
+  });
 }

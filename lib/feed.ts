@@ -1,5 +1,6 @@
 import { filterAndRank } from "@/lib/topics";
 import { getE2eFeed } from "@/lib/feed-fixtures";
+import { sourceMeta } from "@/lib/source-meta";
 import type { FeedItem, FeedResponse, SourceId, SourceStatus } from "@/lib/types";
 
 const REVALIDATE_SECONDS = 300;
@@ -508,7 +509,7 @@ export async function getFeedSnapshot(requestedSources: string | null): Promise<
     }
     statuses.push({ source, loaded: false, message: result.reason instanceof Error ? result.reason.message : "Unavailable" });
     return [];
-  });
+  }).map((item) => ({ ...item, tier: sourceMeta[item.source]?.tier }));
 
   return { items, statuses, fetchedAt: new Date().toISOString() };
 }

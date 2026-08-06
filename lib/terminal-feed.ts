@@ -582,6 +582,8 @@ export async function getTerminalFeed(): Promise<TerminalFeedResponse> {
 
   return {
     items: results.flatMap((result) => result.items).sort((left, right) => {
+      const tierRank = terminalTierRank(left.tier) - terminalTierRank(right.tier);
+      if (tierRank !== 0) return tierRank;
       const leftTime = left.publishedAt ? Date.parse(left.publishedAt) : 0;
       const rightTime = right.publishedAt ? Date.parse(right.publishedAt) : 0;
       return rightTime - leftTime;
@@ -589,4 +591,17 @@ export async function getTerminalFeed(): Promise<TerminalFeedResponse> {
     statuses: results.map((result) => result.status),
     fetchedAt: new Date().toISOString(),
   };
+}
+
+function terminalTierRank(tier: TerminalSourceTier | undefined): number {
+  switch (tier) {
+    case "T1 international":
+      return 0;
+    case "T2 trade":
+      return 1;
+    case "T3 state-media":
+      return 2;
+    default:
+      return 3;
+  }
 }

@@ -50,6 +50,8 @@ export const SOURCE_IDS = [
 
 export type SourceId = (typeof SOURCE_IDS)[number];
 
+export type SourceTier = "T1" | "T2" | "T3";
+
 export type FeedItem = {
   id: string;
   source: SourceId;
@@ -63,6 +65,7 @@ export type FeedItem = {
   score?: number;
   comments?: number;
   tag?: string;
+  tier?: SourceTier;
 };
 
 export type SourceStatus = {
