@@ -28,6 +28,7 @@ import {
   type TerminalFeedResponse,
   type TerminalRegionId,
   type TerminalSourceStatus,
+  type TerminalSourceTier,
   getTerminalSourceStatuses,
 } from "@/lib/terminal-feed";
 
@@ -39,18 +40,31 @@ const regionLabels: Record<TerminalRegionId, string> = {
   us: "United States",
   vietnam: "Vietnam",
   china: "China",
+  global: "Global",
 };
 
 const regionNotes: Record<TerminalRegionId, string> = {
   us: "Federal energy, semiconductor, monetary-policy and export-control records.",
   vietnam: "Government, power-system, energy-policy and strategic-technology records.",
   china: "National energy, industrial, development-planning and policy records.",
+  global: "Pan-regional coverage of semiconductors, data centers, capital, and AI research from tier-1 international press.",
 };
 
 const categoryOrder: TerminalCategory[] = ["Power & grid", "Policy & controls", "Hardware & compute", "Capital & costs", "Technology & research"];
 
 function categorySlug(category: TerminalCategory): string {
   return category.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+function tierColor(tier: TerminalSourceTier): string {
+  switch (tier) {
+    case "T1 international":
+      return "#60d7a5";
+    case "T2 trade":
+      return "#73aefa";
+    case "T3 state-media":
+      return "#ff9179";
+  }
 }
 
 function parseCategory(value: string | null): TerminalCategory | "all" {
@@ -415,7 +429,18 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
                       <div className="flex items-start gap-2">
                         {source.loaded ? <Check className="mt-0.5 shrink-0 text-[#60d7a5]" size={14} /> : <CircleAlert className="mt-0.5 shrink-0 text-[#ff9179]" size={14} />}
                         <div className="min-w-0">
-                          <a className="block text-[12px] font-medium leading-5 text-[#dbe5ef] hover:text-[#7be3b7]" href={source.homepage} target="_blank" rel="noreferrer">{source.name}</a>
+                          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                            <a className="text-[12px] font-medium leading-5 text-[#dbe5ef] hover:text-[#7be3b7]" href={source.homepage} target="_blank" rel="noreferrer">{source.name}</a>
+                            {source.tier && (
+                              <span
+                                className="rounded px-1 py-px font-mono text-[8px] font-semibold uppercase leading-[1.2] tracking-wide"
+                                style={{ color: tierColor(source.tier), border: `1px solid ${tierColor(source.tier)}40` }}
+                                aria-label={`Reputation tier ${source.tier}`}
+                              >
+                                {source.tier.split(" ")[0]}
+                              </span>
+                            )}
+                          </div>
                           <p className="mt-0.5 font-mono text-[10px] leading-4 text-[#788b9e]">{source.loaded ? source.message ?? `${source.itemCount} LIVE RECORD${source.itemCount === 1 ? "" : "S"}` : source.message ?? "UNAVAILABLE"}</p>
                         </div>
                       </div>
@@ -427,7 +452,7 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
               <section className="border border-[#223547] bg-[#09141e] p-4">
                 <p className="terminal-label">DATA DISCIPLINE</p>
                 <ul className="mt-4 space-y-3 text-[12px] leading-5 text-[#9bacbd]">
-                  <li className="flex gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#5bd7a1]" />Primary government, regulator, utility, and public-agency records only.</li>
+                  <li className="flex gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#5bd7a1]" />Tier-1 international press, reputable trade outlets, and government primary records only.</li>
                   <li className="flex gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#5bd7a1]" />Upstream records cache for up to five minutes; refresh requests the latest available server response.</li>
                   <li className="flex gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#5bd7a1]" />Items link to source pages. Interpret policy and legal records with qualified local advice.</li>
                 </ul>

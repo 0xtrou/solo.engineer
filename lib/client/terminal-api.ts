@@ -1,4 +1,4 @@
-import type { TerminalArticle, TerminalFeedResponse, TerminalCategory } from "@/lib/terminal-feed";
+import { isTerminalRegion, type TerminalArticle, TerminalFeedResponse, type TerminalCategory } from "@/lib/terminal-feed";
 
 type CanonicalTerminal = { data: Array<{ id: string; sourceId: string; title: string; excerpt?: string | null; canonicalUrl: string; publishedAt: string; category?: string | null; region?: string | null }>; overview: { sourceHealth: Array<{ sourceId: string; name: string; homepageUrl: string; endpointUrl: string; region?: string | null; category?: string | null; lastSuccessAt?: string | null; lastItemCount?: number; lastError?: string | null }> }; asOf: string };
 const categories: Record<string, TerminalCategory> = {
@@ -14,7 +14,7 @@ function fromCanonical(payload: CanonicalTerminal): TerminalFeedResponse {
   const items: TerminalArticle[] = payload.data.flatMap((record) => {
     const source = health.get(record.sourceId);
     const region = record.region;
-    if (!source || (region !== "us" && region !== "vietnam" && region !== "china")) return [];
+    if (!source || !isTerminalRegion(region)) return [];
     const category = categories[record.category ?? ""];
     if (!category) return [];
     return [{ id: record.id, region, category, sourceId: record.sourceId, sourceName: source.name, sourceHomepage: source.homepageUrl, title: record.title, url: record.canonicalUrl, publishedAt: record.publishedAt, summary: record.excerpt ?? undefined }];
@@ -24,7 +24,7 @@ function fromCanonical(payload: CanonicalTerminal): TerminalFeedResponse {
     statuses: payload.overview.sourceHealth.flatMap((source) => {
       const region = source.region;
       const category = categories[source.category ?? ""];
-      if ((region !== "us" && region !== "vietnam" && region !== "china") || !category) return [];
+      if (!isTerminalRegion(region) || !category) return [];
       return [{ sourceId: source.sourceId, region, category, name: source.name, homepage: source.homepageUrl, endpoint: source.endpointUrl, loaded: !source.lastError, itemCount: source.lastItemCount ?? 0, message: source.lastError ?? undefined }];
     }),
     fetchedAt: payload.asOf,

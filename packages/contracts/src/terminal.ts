@@ -1,7 +1,14 @@
 import { z } from "zod";
 
-export const terminalRegionIds = ["us", "vietnam", "china"] as const;
+export const terminalRegionIds = ["us", "vietnam", "china", "global"] as const;
 export type TerminalRegionId = (typeof terminalRegionIds)[number];
+
+export const terminalSourceTiers = [
+  "T1 international",
+  "T2 trade",
+  "T3 state-media",
+] as const;
+export type TerminalSourceTier = (typeof terminalSourceTiers)[number];
 
 export const terminalCategoryIds = [
   "power-and-grid",
@@ -31,9 +38,19 @@ export const terminalSourceIds = [
   "evn",
   "moit",
   "ndrc-notices",
-  "ndrc-releases",
   "nea",
   "miit",
+  "scmp",
+  "technode",
+  "vnexpress",
+  "vietnamplus",
+  "vir",
+  "vneconomy",
+  "nikkei-asia",
+  "bloomberg",
+  "wsj",
+  "ieee-spectrum",
+  "data-center-dynamics",
 ] as const;
 export type TerminalSourceId = (typeof terminalSourceIds)[number];
 
@@ -48,6 +65,7 @@ export const terminalArticleSchema = z.object({
   url: z.string().url(),
   publishedAt: z.string().datetime().optional(),
   summary: z.string().optional(),
+  tier: z.enum(terminalSourceTiers).optional(),
 });
 
 export type TerminalArticle = z.infer<typeof terminalArticleSchema>;
@@ -62,6 +80,7 @@ export const terminalSourceStatusSchema = z.object({
   loaded: z.boolean(),
   itemCount: z.number().int().nonnegative(),
   message: z.string().optional(),
+  tier: z.enum(terminalSourceTiers).optional(),
 });
 
 export type TerminalSourceStatus = z.infer<typeof terminalSourceStatusSchema>;

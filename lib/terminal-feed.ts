@@ -1,7 +1,8 @@
-export const terminalRegionIds = ["us", "vietnam", "china"] as const;
+export const terminalRegionIds = ["us", "vietnam", "china", "global"] as const;
 
 export type TerminalRegionId = (typeof terminalRegionIds)[number];
 export type TerminalCategory = "Power & grid" | "Policy & controls" | "Hardware & compute" | "Capital & costs" | "Technology & research";
+export type TerminalSourceTier = "T1 international" | "T2 trade" | "T3 state-media";
 
 export type TerminalArticle = {
   id: string;
@@ -14,6 +15,7 @@ export type TerminalArticle = {
   url: string;
   publishedAt?: string;
   summary?: string;
+  tier?: TerminalSourceTier;
 };
 
 export type TerminalSourceStatus = {
@@ -26,6 +28,7 @@ export type TerminalSourceStatus = {
   loaded: boolean;
   itemCount: number;
   message?: string;
+  tier?: TerminalSourceTier;
 };
 
 export type TerminalFeedResponse = {
@@ -34,7 +37,7 @@ export type TerminalFeedResponse = {
   fetchedAt: string;
 };
 
-type SourceDefinition = Omit<TerminalSourceStatus, "loaded" | "itemCount" | "message">;
+type SourceDefinition = Omit<TerminalSourceStatus, "loaded" | "itemCount" | "message" | "tier"> & { tier: TerminalSourceTier };
 type RssEntry = { title: string; url: string; summary?: string; publishedAt?: string };
 
 const REVALIDATE_SECONDS = 300;
@@ -48,6 +51,7 @@ const sourceDefinitions = {
     sourceId: "eia",
     region: "us",
     category: "Power & grid",
+    tier: "T1 international",
     name: "U.S. Energy Information Administration",
     homepage: "https://www.eia.gov/",
     endpoint: "https://www.eia.gov/rss/todayinenergy.xml",
@@ -56,6 +60,7 @@ const sourceDefinitions = {
     sourceId: "federal-register-bis",
     region: "us",
     category: "Policy & controls",
+    tier: "T1 international",
     name: "Federal Register — Bureau of Industry and Security",
     homepage: "https://www.federalregister.gov/agencies/bureau-of-industry-and-security",
     endpoint: "https://www.federalregister.gov/api/v1/documents.json?conditions%5Bagencies%5D%5B%5D=industry-and-security-bureau&conditions%5Bterm%5D=advanced%20computing&order=newest&per_page=8",
@@ -64,6 +69,7 @@ const sourceDefinitions = {
     sourceId: "nist-chips",
     region: "us",
     category: "Hardware & compute",
+    tier: "T1 international",
     name: "NIST CHIPS for America",
     homepage: "https://www.nist.gov/chips",
     endpoint: "https://www.nist.gov/chips/chips-news-releases",
@@ -72,6 +78,7 @@ const sourceDefinitions = {
     sourceId: "federal-reserve",
     region: "us",
     category: "Capital & costs",
+    tier: "T1 international",
     name: "Federal Reserve",
     homepage: "https://www.federalreserve.gov/",
     endpoint: "https://www.federalreserve.gov/feeds/press_monetary.xml",
@@ -80,6 +87,7 @@ const sourceDefinitions = {
     sourceId: "vietnam-government",
     region: "vietnam",
     category: "Policy & controls",
+    tier: "T3 state-media",
     name: "Government News of Vietnam",
     homepage: "https://baochinhphu.vn/",
     endpoint: "https://baochinhphu.vn/home.rss",
@@ -88,6 +96,7 @@ const sourceDefinitions = {
     sourceId: "vietnam-science-technology",
     region: "vietnam",
     category: "Technology & research",
+    tier: "T3 state-media",
     name: "Vietnam Ministry of Science and Technology",
     homepage: "https://mst.gov.vn/",
     endpoint: "https://mst.gov.vn/rss/home.rss",
@@ -96,6 +105,7 @@ const sourceDefinitions = {
     sourceId: "evn",
     region: "vietnam",
     category: "Power & grid",
+    tier: "T2 trade",
     name: "Electricity of Vietnam",
     homepage: "https://en.evn.com.vn/",
     endpoint: "https://en.evn.com.vn/",
@@ -104,6 +114,7 @@ const sourceDefinitions = {
     sourceId: "moit",
     region: "vietnam",
     category: "Capital & costs",
+    tier: "T3 state-media",
     name: "Vietnam Ministry of Industry and Trade",
     homepage: "https://moit.gov.vn/en/",
     endpoint: "https://moit.gov.vn/en/",
@@ -112,22 +123,16 @@ const sourceDefinitions = {
     sourceId: "ndrc-notices",
     region: "china",
     category: "Power & grid",
+    tier: "T3 state-media",
     name: "National Development and Reform Commission",
     homepage: "https://www.ndrc.gov.cn/",
     endpoint: "https://www.ndrc.gov.cn/xxgk/zcfb/tz/",
-  },
-  ndrcReleases: {
-    sourceId: "ndrc-releases",
-    region: "china",
-    category: "Policy & controls",
-    name: "National Development and Reform Commission",
-    homepage: "https://www.ndrc.gov.cn/",
-    endpoint: "https://www.ndrc.gov.cn/xwdt/xwfb/",
   },
   nea: {
     sourceId: "nea",
     region: "china",
     category: "Power & grid",
+    tier: "T3 state-media",
     name: "National Energy Administration",
     homepage: "https://www.nea.gov.cn/",
     endpoint: "https://www.nea.gov.cn/",
@@ -136,9 +141,109 @@ const sourceDefinitions = {
     sourceId: "miit",
     region: "china",
     category: "Hardware & compute",
+    tier: "T3 state-media",
     name: "Ministry of Industry and Information Technology",
     homepage: "https://www.miit.gov.cn/",
     endpoint: "https://www.miit.gov.cn/",
+  },
+  scmp: {
+    sourceId: "scmp",
+    region: "china",
+    category: "Hardware & compute",
+    tier: "T1 international",
+    name: "South China Morning Post — Tech",
+    homepage: "https://www.scmp.com/tech",
+    endpoint: "https://www.scmp.com/rss/36/feed",
+  },
+  technode: {
+    sourceId: "technode",
+    region: "china",
+    category: "Technology & research",
+    tier: "T2 trade",
+    name: "TechNode",
+    homepage: "https://technode.com/",
+    endpoint: "https://technode.com/feed/",
+  },
+  vnexpress: {
+    sourceId: "vnexpress",
+    region: "vietnam",
+    category: "Technology & research",
+    tier: "T2 trade",
+    name: "VnExpress International",
+    homepage: "https://e.vnexpress.net/",
+    endpoint: "https://e.vnexpress.net/rss/tech.rss",
+  },
+  vietnamplus: {
+    sourceId: "vietnamplus",
+    region: "vietnam",
+    category: "Policy & controls",
+    tier: "T3 state-media",
+    name: "VietnamPlus",
+    homepage: "https://en.vietnamplus.vn/",
+    endpoint: "https://en.vietnamplus.vn/rss/home.rss",
+  },
+  vir: {
+    sourceId: "vir",
+    region: "vietnam",
+    category: "Capital & costs",
+    tier: "T2 trade",
+    name: "Vietnam Investment Review",
+    homepage: "https://vir.com.vn/",
+    endpoint: "https://vir.com.vn/rss_feed/",
+  },
+  vneconomy: {
+    sourceId: "vneconomy",
+    region: "vietnam",
+    category: "Technology & research",
+    tier: "T2 trade",
+    name: "VnEconomy — Digital Economy",
+    homepage: "https://vneconomy.vn/",
+    endpoint: "https://vneconomy.vn/kinh-te-so.rss",
+  },
+  nikkeiAsia: {
+    sourceId: "nikkei-asia",
+    region: "global",
+    category: "Hardware & compute",
+    tier: "T1 international",
+    name: "Nikkei Asia",
+    homepage: "https://asia.nikkei.com/",
+    endpoint: "https://asia.nikkei.com/rss/feed/nar",
+  },
+  bloomberg: {
+    sourceId: "bloomberg",
+    region: "global",
+    category: "Capital & costs",
+    tier: "T1 international",
+    name: "Bloomberg Technology",
+    homepage: "https://www.bloomberg.com/technology",
+    endpoint: "https://feeds.bloomberg.com/technology/news.rss",
+  },
+  wsj: {
+    sourceId: "wsj",
+    region: "global",
+    category: "Hardware & compute",
+    tier: "T1 international",
+    name: "WSJ Tech",
+    homepage: "https://www.wsj.com/tech",
+    endpoint: "https://feeds.content.dowjones.io/public/rss/RSSWSJD",
+  },
+  ieeeSpectrum: {
+    sourceId: "ieee-spectrum",
+    region: "global",
+    category: "Hardware & compute",
+    tier: "T2 trade",
+    name: "IEEE Spectrum",
+    homepage: "https://spectrum.ieee.org/",
+    endpoint: "https://spectrum.ieee.org/feeds/feed.rss",
+  },
+  dataCenterDynamics: {
+    sourceId: "data-center-dynamics",
+    region: "global",
+    category: "Power & grid",
+    tier: "T2 trade",
+    name: "Data Center Dynamics",
+    homepage: "https://www.datacenterdynamics.com/",
+    endpoint: "https://www.datacenterdynamics.com/en/rss/",
   },
 } as const satisfies Record<string, SourceDefinition>;
 
@@ -148,11 +253,43 @@ const relevanceTerms: Partial<Record<string, string[]>> = {
   "vietnam-science-technology": ["trí tuệ nhân tạo", "chuyển đổi số", "dữ liệu", "bán dẫn", "vi mạch", "công nghệ số", "công nghệ chiến lược", "hạ tầng số", "viễn thông"],
   moit: ["energy", "electricity", "power", "grid", "semiconductor", "data center", "digital transformation", "renewable", "transmission"],
   "ndrc-notices": ["人工智能", "算力", "数据", "电力", "能源", "电网", "集成电路", "芯片", "数字", "新型电力系统", "储能"],
-  "ndrc-releases": ["人工智能", "算力", "数据", "电力", "能源", "电网", "集成电路", "芯片", "数字", "新型电力系统", "储能"],
   miit: ["人工智能", "算力", "数据中心", "数据", "芯片", "半导体", "集成电路", "通信", "网络", "数字", "智能"],
+  scmp: ["chip", "semiconductor", "ai", "data center", "huawei", "smic", "power", "grid", "energy", "battery", "compute", "gpgpu", "memory", "hbm"],
+  technode: ["ai", "chip", "semiconductor", "data center", "compute", "venture", "fund", "robotics", "open source", "model"],
+  vnexpress: ["ai", "semiconductor", "chip", "data center", "digital", "fdi", "energy", "power", "digital economy"],
+  vietnamplus: ["ai", "semiconductor", "chip", "data center", "digital", "fdi", "cybersecurity", "energy", "power", "5g", "6g"],
+  vir: ["fdi", "investment", "semiconductor", "data center", "industrial park", "energy", "power", "ai", "digital", "infrastructure", "factory"],
+  vneconomy: ["bán dẫn", "trung tâm dữ liệu", "điện lực", "trí tuệ nhân tạo", "chuyển đổi số", "đầu tư", "vi mạch", "lưới điện", "năng lượng", "hạ tầng số"],
+  "nikkei-asia": ["semiconductor", "chip", "ai", "data center", "tsmc", "samsung", "sk hynix", "micron", "power", "energy", "compute", "foundry", "wafer"],
+  bloomberg: ["ai", "chip", "semiconductor", "data center", "compute", "microsoft", "google", "amazon", "nvidia", "openai", "power", "energy", "capex", "hyperscale"],
+  wsj: ["ai", "chip", "semiconductor", "data center", "compute", "nvidia", "openai", "microsoft", "google", "amazon", "power", "energy", "capex"],
+  "ieee-spectrum": ["semiconductor", "chip", "ai", "data center", "compute", "transistor", "wafer", "memory", "energy", "power", "foundry", "node", "gpu"],
+  "data-center-dynamics": ["data center", "power", "grid", "energy", "cooling", "hyperscale", "capex", "compute", "submarine", "fibre", "colocation"],
 };
 
-const titleOnlyRelevanceSources = new Set(["eia", "vietnam-government", "vietnam-science-technology", "moit"]);
+const titleOnlyRelevanceSources = new Set(["eia", "vietnam-government", "vietnam-science-technology", "moit", "vietnamplus", "vnexpress"]);
+
+const categoryKeywords: Record<TerminalCategory, string[]> = {
+  "Power & grid": ["power", "electricity", "grid", "energy", "generation", "transmission", "battery", "storage", "lng", "natural gas", "nuclear", "solar", "wind", "substation", "transformer", "turbine", "renewable", "电力", "能源", "电网", "储能", "风电", "光伏", "核电", "điện", "điện lực", "lưới điện", "năng lượng", "năng lượng tái tạo", "cooling", "hyperscale", "submarine", "colocation"],
+  "Policy & controls": ["policy", "regulation", "rule", "ban", "export control", "sanction", "tariff", "compliance", "directive", "order", "federal register", "cybersecurity", "privacy", "antitrust", "approval", "law", "政策", "监管", "管制", "出口", "禁令", "反垄断", "chính sách", "quy định", "cấm", "chống độc quyền"],
+  "Hardware & compute": ["chip", "semiconductor", "gpu", "cpu", "tpu", "wafer", "fab", "foundry", "node", "transistor", "memory", "hbm", "tsmc", "samsung", "sk hynix", "micron", "smic", "huawei", "nvidia", "intel", "amd", "芯片", "半导体", "集成电路", "算力", "bán dẫn", "vi mạch", "colo"],
+  "Capital & costs": ["billion", "million", "funding", "raise", "ipo", "investment", "capex", "valuation", "venture", "vc", "deal", "cost", "price", "fdi", "factory", "industrial park", "投资", "融资", "亿元", "đầu tư", "vốn", "kêu gọi"],
+  "Technology & research": ["ai ", "ai,", "ai.", "artificial intelligence", "llm", "model", "training", "inference", "algorithm", "research", "r&d", "breakthrough", "openai", "deepmind", "deepseek", "transformer", "robotics", "人工智能", "模型", "研发", "深度求索", "trí tuệ nhân tạo", "chuyển đổi số", "công nghệ", "đổi mới"],
+};
+
+function categorizeArticle(title: string, summary: string | undefined, fallback: TerminalCategory): TerminalCategory {
+  const text = `${title} ${summary ?? ""}`.toLowerCase();
+  let best = fallback;
+  let bestScore = 0;
+  for (const [category, terms] of Object.entries(categoryKeywords)) {
+    const score = terms.reduce((acc, term) => acc + (text.includes(term) ? 1 : 0), 0);
+    if (score > bestScore) {
+      bestScore = score;
+      best = category as TerminalCategory;
+    }
+  }
+  return best;
+}
 
 function stripHtml(value: string | undefined): string {
   return decodeEntities((value ?? "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]*>/g, " "))
@@ -194,18 +331,44 @@ function parseDate(value: string | undefined): string | undefined {
   return Number.isNaN(timestamp) ? undefined : new Date(timestamp).toISOString();
 }
 
+function getAttribute(value: string | undefined, attribute: string): string | undefined {
+  return value?.match(new RegExp(`\\b${attribute}=["']([^"']+)["']`, "i"))?.[1];
+}
+
+function entryLink(item: string, base: string): string | undefined {
+  // Atom <link href="..."> (prefer rel="alternate" or first href) — fall back to RSS 2.0 <link> text.
+  const linkTags = [...item.matchAll(/<link\b([^>]*)>/gi)].map((match) => match[0]);
+  const alternate = linkTags.find((tag) => /rel=["']alternate["']/i.test(tag));
+  const atomHref = normalizeUrl(getAttribute(alternate ?? linkTags[0], "href"), base);
+  if (atomHref) return atomHref;
+  return normalizeUrl(stripHtml(xmlValue(item, "link")), base);
+}
+
 function parseRss(xml: string, base: string): RssEntry[] {
-  return [...xml.matchAll(/<item(?:\s[^>]*)?>([\s\S]*?)<\/item>/gi)].flatMap((match) => {
+  const rssItems: RssEntry[] = [...xml.matchAll(/<item(?:\s[^>]*)?>([\s\S]*?)<\/item>/gi)].flatMap((match) => {
     const item = match[1];
     const title = stripHtml(xmlValue(item, "title"));
-    const url = normalizeUrl(stripHtml(xmlValue(item, "link")), base);
+    const url = entryLink(item, base);
     if (!title || !url) return [];
     return [{
       title,
       url,
-      summary: stripHtml(xmlValue(item, "description")) || undefined,
+      summary: stripHtml(xmlValue(item, "description") || xmlValue(item, "content:encoded")) || undefined,
       publishedAt: parseDate(stripHtml(xmlValue(item, "pubDate")) || stripHtml(xmlValue(item, "dc:date"))),
     }];
+  });
+
+  if (rssItems.length > 0) return rssItems;
+
+  // Atom 1.0 <entry> — used by The Verge, The Register, The Information, etc.
+  return [...xml.matchAll(/<entry(?:\s[^>]*)?>([\s\S]*?)<\/entry>/gi)].flatMap((match) => {
+    const entry = match[1];
+    const title = stripHtml(xmlValue(entry, "title"));
+    const url = entryLink(entry, base);
+    if (!title || !url) return [];
+    const summary = stripHtml(xmlValue(entry, "summary") || xmlValue(entry, "content")) || undefined;
+    const publishedAt = parseDate(stripHtml(xmlValue(entry, "published")) || stripHtml(xmlValue(entry, "updated")));
+    return [{ title, url, summary, publishedAt }];
   });
 }
 
@@ -219,10 +382,6 @@ async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { ...sourceRequestInit, signal: AbortSignal.timeout(15_000) });
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
   return response.json() as Promise<T>;
-}
-
-function getAttribute(value: string, attribute: string): string | undefined {
-  return value.match(new RegExp(`\\b${attribute}=["']([^"']+)["']`, "i"))?.[1];
 }
 
 function htmlLinks(html: string, base: string): RssEntry[] {
@@ -320,7 +479,7 @@ function toArticles(source: SourceDefinition, entries: RssEntry[], limit = 5): T
     return [{
       id: `${source.sourceId}:${entry.url}`,
       region: source.region,
-      category: source.category,
+      category: categorizeArticle(entry.title, entry.summary, source.category),
       sourceId: source.sourceId,
       sourceName: source.name,
       sourceHomepage: source.homepage,
@@ -328,6 +487,7 @@ function toArticles(source: SourceDefinition, entries: RssEntry[], limit = 5): T
       url: entry.url,
       publishedAt: entry.publishedAt,
       summary: entry.summary,
+      tier: source.tier,
     }];
   }).slice(0, limit);
 }
@@ -352,9 +512,19 @@ const adapters: Adapter[] = [
   { source: sourceDefinitions.evn, load: getEvnEntries },
   { source: sourceDefinitions.moit, load: async () => getMoitEntries(await fetchText(sourceDefinitions.moit.endpoint)) },
   { source: sourceDefinitions.ndrcNotices, load: async () => getNdrCEntries(await fetchText(sourceDefinitions.ndrcNotices.endpoint), sourceDefinitions.ndrcNotices) },
-  { source: sourceDefinitions.ndrcReleases, load: async () => getNdrCEntries(await fetchText(sourceDefinitions.ndrcReleases.endpoint), sourceDefinitions.ndrcReleases) },
   { source: sourceDefinitions.nea, load: async () => getNeaEntries(await fetchText(sourceDefinitions.nea.endpoint)) },
   { source: sourceDefinitions.miit, load: async () => getMiitEntries(await fetchText(sourceDefinitions.miit.endpoint)) },
+  { source: sourceDefinitions.scmp, load: async () => parseRss(await fetchText(sourceDefinitions.scmp.endpoint), sourceDefinitions.scmp.homepage) },
+  { source: sourceDefinitions.technode, load: async () => parseRss(await fetchText(sourceDefinitions.technode.endpoint), sourceDefinitions.technode.homepage) },
+  { source: sourceDefinitions.vnexpress, load: async () => parseRss(await fetchText(sourceDefinitions.vnexpress.endpoint), sourceDefinitions.vnexpress.homepage) },
+  { source: sourceDefinitions.vietnamplus, load: async () => parseRss(await fetchText(sourceDefinitions.vietnamplus.endpoint), sourceDefinitions.vietnamplus.homepage) },
+  { source: sourceDefinitions.vir, load: async () => parseRss(await fetchText(sourceDefinitions.vir.endpoint), sourceDefinitions.vir.homepage) },
+  { source: sourceDefinitions.vneconomy, load: async () => parseRss(await fetchText(sourceDefinitions.vneconomy.endpoint), sourceDefinitions.vneconomy.homepage) },
+  { source: sourceDefinitions.nikkeiAsia, load: async () => parseRss(await fetchText(sourceDefinitions.nikkeiAsia.endpoint), sourceDefinitions.nikkeiAsia.homepage) },
+  { source: sourceDefinitions.bloomberg, load: async () => parseRss(await fetchText(sourceDefinitions.bloomberg.endpoint), sourceDefinitions.bloomberg.homepage) },
+  { source: sourceDefinitions.wsj, load: async () => parseRss(await fetchText(sourceDefinitions.wsj.endpoint), sourceDefinitions.wsj.homepage) },
+  { source: sourceDefinitions.ieeeSpectrum, load: async () => parseRss(await fetchText(sourceDefinitions.ieeeSpectrum.endpoint), sourceDefinitions.ieeeSpectrum.homepage) },
+  { source: sourceDefinitions.dataCenterDynamics, load: async () => parseRss(await fetchText(sourceDefinitions.dataCenterDynamics.endpoint), sourceDefinitions.dataCenterDynamics.homepage) },
 ];
 
 export function isTerminalRegion(value: string | null | undefined): value is TerminalRegionId {
@@ -370,10 +540,24 @@ export function getTerminalSourceStatuses(): TerminalSourceStatus[] {
   }));
 }
 
+async function settleWithConcurrency<T>(tasks: Array<() => Promise<T>>, concurrency = 5): Promise<T[]> {
+  const results: T[] = new Array(tasks.length);
+  let nextIndex = 0;
+  const worker = async () => {
+    while (nextIndex < tasks.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await tasks[index]();
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, tasks.length) }, () => worker()));
+  return results;
+}
+
 export async function getTerminalFeed(): Promise<TerminalFeedResponse> {
-  const results = await Promise.all(adapters.map(async ({ source, load }) => {
+  const results = await settleWithConcurrency(adapters.map(({ source, load }) => async () => {
     try {
-      const items = toArticles(source, await load());
+      const items = toArticles(source, await load(), 6);
       return {
         items,
         status: {
@@ -394,7 +578,7 @@ export async function getTerminalFeed(): Promise<TerminalFeedResponse> {
         } satisfies TerminalSourceStatus,
       };
     }
-  }));
+  }), 5);
 
   return {
     items: results.flatMap((result) => result.items).sort((left, right) => {
