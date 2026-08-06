@@ -27,7 +27,19 @@ import {
   Users,
   Building2,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  defaultFeedFilters,
+  parseFeedFilters,
+  policySourceIds,
+  researchSourceIds,
+  type FeedFilters,
+  type FeedView,
+  type SelectedSource,
+  writeFeedFilters,
+} from "@/lib/feed-filters";
 import { sourceMeta } from "@/lib/source-meta";
 import type { FeedItem, FeedResponse, SourceId } from "@/lib/types";
 
@@ -52,18 +64,7 @@ const sourceIcons: Record<SourceId, typeof Sparkles> = {
   discord: MessageCircle,
 };
 
-const researchSourceIds: SourceId[] = [
-  "arxiv",
-  "hacker-news",
-  "github",
-  "stack-overflow",
-  "dev",
-  "indie-hackers",
-  "bluesky",
-];
-
-const policySourceIds: SourceId[] = ["eu-regulation", "us-regulation", "vietnam-regulation", "world-bank"];
-const mobileSourceIds: SourceId[] = [...researchSourceIds, ...policySourceIds];
+const mobileSourceIds = [...researchSourceIds, ...policySourceIds];
 
 function getInitials(author: string) {
   const initials = author
@@ -126,7 +127,7 @@ function FeedCard({ item, saved, upvoted, onToggleSave, onToggleVote }: {
   const summaryNeedsToggle = item.summary.length > 185;
 
   return (
-    <article className="border-b border-[#ebece7] py-5 first:pt-4">
+    <article className="border-b border-[#ebece7] py-5 first:pt-4" data-testid="feed-card" data-source={item.source}>
       <div className="ml-12 flex h-5 items-center gap-1.5 text-[11px] text-[#9aa09b]">
         <SourcePill source={item.source} />
         <span>·</span>
@@ -182,20 +183,46 @@ function FeedCard({ item, saved, upvoted, onToggleSave, onToggleVote }: {
   );
 }
 
+function feedMatchesFilters(item: FeedItem, filters: FeedFilters, saved: Set<string>) {
+  if (filters.source !== "all" && item.source !== filters.source) return false;
+  if (filters.view === "research" && !(researchSourceIds as readonly SourceId[]).includes(item.source)) return false;
+  if (filters.view === "policy" && !(policySourceIds as readonly SourceId[]).includes(item.source)) return false;
+  if (filters.saved && !saved.has(item.id)) return false;
+
+  const query = filters.query.toLowerCase();
+  return !query || `${item.title} ${item.summary} ${item.author} ${item.tag || ""}`.toLowerCase().includes(query);
+}
+
 export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
-  const [feed, setFeed] = useState<FeedResponse>(initialFeed);
-  const [activeSource, setActiveSource] = useState<SourceId | "all">("all");
-  const [activeTab, setActiveTab] = useState<"focused" | "research" | "policy">("focused");
-  const [query, setQuery] = useState("");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const filters = useMemo(() => parseFeedFilters(searchParams.toString()), [searchParams]);
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [upvoted, setUpvoted] = useState<Set<string>>(new Set());
-  const [showSaved, setShowSaved] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [toast, setToast] = useState<Toast>(null);
+  const feedQuery = useQuery({
+    queryKey: ["feed", "all"],
+    queryFn: async (): Promise<FeedResponse> => {
+      const response = await fetch("/api/feed?sources=all", { cache: "no-store" });
+      if (!response.ok) throw new Error("Feed request failed");
+      return response.json() as Promise<FeedResponse>;
+    },
+    initialData: initialFeed,
+    staleTime: 300_000,
+  });
+  const feed = feedQuery.data ?? initialFeed;
 
   const notify = useCallback((message: string, kind: ToastKind = "success") => {
     setToast({ message, kind });
   }, []);
+
+  const updateFilters = useCallback((patch: Partial<FeedFilters>) => {
+    const next = { ...filters, ...patch };
+    const nextSearchParams = writeFeedFilters(next, new URLSearchParams(searchParams.toString()));
+    const queryString = nextSearchParams.toString();
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+  }, [filters, pathname, router, searchParams]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -211,22 +238,16 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
-  const refresh = useCallback(async (sources: SourceId | "all" = activeSource) => {
-    setIsRefreshing(true);
+  const refresh = useCallback(async () => {
     try {
-      const params = sources === "all" ? "all" : sources;
-      const response = await fetch(`/api/feed?sources=${encodeURIComponent(params)}`, { cache: "no-store" });
-      if (!response.ok) throw new Error("Feed request failed");
-      const nextFeed = (await response.json()) as FeedResponse;
-      setFeed(nextFeed);
-      const unavailable = nextFeed.statuses.filter((status) => !status.loaded);
+      const nextFeed = await feedQuery.refetch();
+      if (nextFeed.isError) throw nextFeed.error;
+      const unavailable = (nextFeed.data ?? initialFeed).statuses.filter((status) => !status.loaded);
       notify(unavailable.length ? `Updated — ${unavailable.length} source${unavailable.length > 1 ? "s" : ""} unavailable` : "Your feed is fresh");
     } catch {
       notify("Could not refresh right now", "warning");
-    } finally {
-      setIsRefreshing(false);
     }
-  }, [activeSource, notify]);
+  }, [feedQuery, initialFeed, notify]);
 
   const toggleSave = (id: string) => {
     setSaved((current) => {
@@ -250,53 +271,64 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
   };
 
   const visibleItems = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    let items = feed.items.filter((item) => activeSource === "all" || item.source === activeSource);
-    if (activeTab === "research") items = items.filter((item) => researchSourceIds.includes(item.source));
-    if (activeTab === "policy") items = items.filter((item) => policySourceIds.includes(item.source));
-    if (showSaved) items = items.filter((item) => saved.has(item.id));
-    if (normalizedQuery) {
-      items = items.filter((item) => `${item.title} ${item.summary} ${item.author} ${item.tag || ""}`.toLowerCase().includes(normalizedQuery));
-    }
-    if (activeTab === "research") return [...items].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    const items = feed.items.filter((item) => feedMatchesFilters(item, filters, saved));
+    if (filters.view === "research") return [...items].sort((left, right) => (right.score ?? 0) - (left.score ?? 0));
     return items;
-  }, [activeSource, activeTab, feed.items, query, saved, showSaved]);
+  }, [feed.items, filters, saved]);
 
   const loadedCount = feed.statuses.filter((status) => status.loaded).length;
   const unavailableStatuses = feed.statuses.filter((status) => !status.loaded);
+  const isRefreshing = feedQuery.isFetching;
+
+  const setSource = (source: SelectedSource) => {
+    const sourceIsResearch = (researchSourceIds as readonly SourceId[]).includes(source as SourceId);
+    const sourceIsPolicy = (policySourceIds as readonly SourceId[]).includes(source as SourceId);
+    const nextView = (filters.view === "research" && sourceIsPolicy) || (filters.view === "policy" && sourceIsResearch)
+      ? "focused"
+      : filters.view;
+
+    updateFilters({ source, view: nextView, saved: false });
+  };
+  const setView = (view: FeedView) => {
+    const sourceMatchesView = view === "focused"
+      || (view === "research" && (filters.source === "all" || researchSourceIds.includes(filters.source as (typeof researchSourceIds)[number])))
+      || (view === "policy" && (filters.source === "all" || policySourceIds.includes(filters.source as (typeof policySourceIds)[number])));
+    updateFilters({ view, source: sourceMatchesView ? filters.source : "all" });
+  };
+  const resetFilters = () => updateFilters(defaultFeedFilters);
 
   return (
     <main className="min-h-screen bg-[#f7f8f5] text-[#202426]">
       <div className="mx-auto grid min-h-screen max-w-[1480px] grid-cols-1 lg:grid-cols-[236px_minmax(570px,1fr)] xl:grid-cols-[236px_minmax(570px,1fr)_340px]">
         <aside className="hidden min-h-screen border-r border-[#e4e6e1] bg-[#fbfcfa] px-[18px] py-7 lg:flex lg:flex-col">
-          <button className="flex items-center gap-2.5 px-3 text-[25px] font-bold tracking-[-1.3px]" onClick={() => { setActiveSource("all"); setShowSaved(false); }}>
+          <button className="flex items-center gap-2.5 px-3 text-[25px] font-bold tracking-[-1.3px]" onClick={resetFilters} aria-label="Show all signals">
             <span className="relative grid h-6 w-6 place-items-center -rotate-12"><i className="absolute h-[7px] w-[7px] -translate-x-1.5 translate-y-1.5 rounded-full bg-[#e8bd4d]" /><i className="absolute h-[7px] w-[7px] translate-x-1.5 translate-y-1.5 rounded-full bg-[#f27252]" /><i className="absolute h-[7px] w-[7px] -translate-y-1.5 rounded-full bg-[#263e52]" /></span>
             <span className="font-display">signal</span>
           </button>
 
-          <nav className="mt-10 space-y-1">
-            <button className="nav-item nav-item-active"><Home size={19} /> Home</button>
-            <button className="nav-item" onClick={() => notify("Explore is coming next") }><Compass size={19} /> Explore</button>
-            <button className={`nav-item ${showSaved ? "nav-item-active" : ""}`} onClick={() => setShowSaved((value) => !value)}><Bookmark size={19} /> Library <span className="ml-auto font-mono text-[10px] font-medium text-[#8e9590]">{saved.size}</span></button>
+          <nav className="mt-10 space-y-1" aria-label="Primary navigation">
+            <button className={`nav-item ${!filters.saved ? "nav-item-active" : ""}`} onClick={() => updateFilters({ saved: false })}><Home size={19} /> Home</button>
+            <button className="nav-item" onClick={() => notify("Explore is coming next")}><Compass size={19} /> Explore</button>
+            <button className={`nav-item ${filters.saved ? "nav-item-active" : ""}`} onClick={() => updateFilters({ saved: !filters.saved })}><Bookmark size={19} /> Library <span className="ml-auto font-mono text-[10px] font-medium text-[#8e9590]">{saved.size}</span></button>
           </nav>
 
           <div className="mt-9 flex items-center justify-between px-2.5 font-mono text-[10px] tracking-[.8px] text-[#989f9a]">
             <span>YOUR SOURCES</span>
-            <button className="rounded p-0.5 hover:bg-[#edf0ec]" onClick={() => notify("Sources are configured in your local environment") } aria-label="Source settings"><Plus size={16} /></button>
+            <button className="rounded p-0.5 hover:bg-[#edf0ec]" onClick={() => notify("Sources are configured in your local environment")} aria-label="Source settings"><Plus size={16} /></button>
           </div>
-          <nav className="mt-2 space-y-1">
-            <button className={`source-item ${activeSource === "all" ? "source-item-active" : ""}`} onClick={() => { setActiveSource("all"); setShowSaved(false); }}><Sparkles size={16} /> All sources <span>{feed.items.length}</span></button>
+          <nav className="mt-2 space-y-1" aria-label="Research sources">
+            <button className={`source-item ${filters.source === "all" ? "source-item-active" : ""}`} onClick={() => setSource("all")} data-testid="source-filter-all"><Sparkles size={16} /> All sources <span>{feed.items.length}</span></button>
             {researchSourceIds.map((source) => (
-              <button key={source} className={`source-item ${activeSource === source ? "source-item-active" : ""}`} onClick={() => { setActiveSource(source); setShowSaved(false); }}>
+              <button key={source} className={`source-item ${filters.source === source ? "source-item-active" : ""}`} onClick={() => setSource(source)} data-testid={`source-filter-${source}`}>
                 <span style={{ color: sourceMeta[source].accent }}><SourceMark source={source} size={16} /></span>{sourceMeta[source].label}
               </button>
             ))}
           </nav>
-          <button className="mt-3 flex items-center gap-2 px-2.5 text-[12px] font-semibold text-[#7c847f] hover:text-[#27302b]" onClick={() => notify("Discord and Hashnode need optional local adapters; see .env.example") }><Plus size={16} /> Add local source</button>
+          <button className="mt-3 flex items-center gap-2 px-2.5 text-[12px] font-semibold text-[#7c847f] hover:text-[#27302b]" onClick={() => notify("Discord and Hashnode need optional local adapters; see .env.example")}><Plus size={16} /> Add local source</button>
           <div className="mt-4 px-2.5 font-mono text-[10px] tracking-[.8px] text-[#989f9a]">POLICY & ECONOMY</div>
-          <nav className="mt-2 space-y-1">
+          <nav className="mt-2 space-y-1" aria-label="Policy and economy sources">
             {policySourceIds.map((source) => (
-              <button key={source} className={`source-item ${activeSource === source ? "source-item-active" : ""}`} onClick={() => { setActiveSource(source); setShowSaved(false); }}>
+              <button key={source} className={`source-item ${filters.source === source ? "source-item-active" : ""}`} onClick={() => setSource(source)} data-testid={`source-filter-${source}`}>
                 <span style={{ color: sourceMeta[source].accent }}><SourceMark source={source} size={16} /></span>{sourceMeta[source].label}
               </button>
             ))}
@@ -306,11 +338,11 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
 
         <section className="min-w-0 bg-[#fffdfb] px-5 sm:px-9 lg:px-11">
           <header className="flex h-[calc(58px+env(safe-area-inset-top))] items-center justify-between border-b border-[#e7e8e2] pt-[env(safe-area-inset-top)] lg:hidden">
-            <button className="flex items-center gap-2" onClick={() => { setActiveSource("all"); setShowSaved(false); }} aria-label="Show all signals">
+            <button className="flex items-center gap-2" onClick={resetFilters} aria-label="Show all signals">
               <span className="relative grid h-5 w-5 place-items-center -rotate-12" aria-hidden="true"><i className="absolute h-[6px] w-[6px] -translate-x-1 translate-y-1 rounded-full bg-[#e8bd4d]" /><i className="absolute h-[6px] w-[6px] translate-x-1 translate-y-1 rounded-full bg-[#f27252]" /><i className="absolute h-[6px] w-[6px] -translate-y-1 rounded-full bg-[#263e52]" /></span>
               <span className="font-display text-xl font-bold tracking-tight">signal</span>
             </button>
-            <button className="rounded-md p-2 text-[#6c746f] hover:bg-[#f0f1ed] disabled:cursor-wait disabled:opacity-60" onClick={() => refresh()} disabled={isRefreshing} aria-label="Refresh feed"><RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} /></button>
+            <button className="rounded-md p-2 text-[#6c746f] hover:bg-[#f0f1ed] disabled:cursor-wait disabled:opacity-60" onClick={() => void refresh()} disabled={isRefreshing} aria-label="Refresh feed"><RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} /></button>
           </header>
           <div className="flex items-start justify-between gap-4 pb-5 pt-8 sm:pb-6 sm:pt-11">
             <div>
@@ -318,7 +350,7 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
               <h1 className="mt-2 font-display text-[27px] font-semibold tracking-[-1.1px] text-[#222725] sm:text-[31px]">Worth your attention <span className="font-sans text-[20px] text-[#e7af4a]">✦</span></h1>
               <p className="mt-1.5 text-[13px] text-[#818883]">{loadedCount} live sources for research, technology, policy, and growth.</p>
             </div>
-            <button className="mt-1 hidden items-center gap-1.5 rounded-md border border-[#dedfd9] bg-[#fffefa] px-2.5 py-1.5 text-[11px] font-medium text-[#717975] shadow-sm hover:border-[#cfd2cc] sm:flex" onClick={() => refresh()} disabled={isRefreshing}>
+            <button className="mt-1 hidden items-center gap-1.5 rounded-md border border-[#dedfd9] bg-[#fffefa] px-2.5 py-1.5 text-[11px] font-medium text-[#717975] shadow-sm hover:border-[#cfd2cc] disabled:cursor-wait disabled:opacity-60 sm:flex" onClick={() => void refresh()} disabled={isRefreshing}>
               <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} /> {isRefreshing ? "Refreshing" : "Refresh"}
             </button>
           </div>
@@ -326,16 +358,16 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
           <div className="flex h-11 items-center justify-between border-b border-[#e6e6e0]">
             <nav className="tab-scroll -mx-5 flex h-full min-w-0 gap-6 overflow-x-auto px-5 sm:mx-0 sm:px-0" aria-label="Feed views">
               {([ ["focused", "Focused"], ["research", "Research & AI"], ["policy", "Policy & economy"] ] as const).map(([id, label]) => (
-                <button key={id} className={`tab-button shrink-0 whitespace-nowrap ${activeTab === id ? "tab-button-active" : ""}`} onClick={() => setActiveTab(id)}>{label}</button>
+                <button key={id} className={`tab-button shrink-0 whitespace-nowrap ${filters.view === id ? "tab-button-active" : ""}`} onClick={() => setView(id)} data-testid={`view-filter-${id}`}>{label}</button>
               ))}
             </nav>
-            <button className="ml-2 shrink-0 text-[11px] font-semibold text-[#818984] hover:text-[#3d4540] lg:flex lg:items-center lg:gap-1.5" onClick={() => notify("Use research, policy, and source filters to tune your feed") } aria-label="How to tune the feed"><ChevronDown size={15} className="lg:hidden" /><span className="hidden lg:inline">Tune</span></button>
+            <button className="ml-2 shrink-0 text-[11px] font-semibold text-[#818984] hover:text-[#3d4540] lg:flex lg:items-center lg:gap-1.5" onClick={() => notify("Use research, policy, and source filters to tune your feed")} aria-label="How to tune the feed"><ChevronDown size={15} className="lg:hidden" /><span className="hidden lg:inline">Tune</span></button>
           </div>
 
           <nav className="tab-scroll -mx-5 flex gap-2 overflow-x-auto border-b border-[#e6e6e0] px-5 py-3 lg:hidden" aria-label="Filter feed by source">
-            <button className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${activeSource === "all" ? "border-[#263e52] bg-[#263e52] text-white" : "border-[#dde0da] bg-white text-[#59615c]"}`} onClick={() => { setActiveSource("all"); setShowSaved(false); }}>All</button>
+            <button className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${filters.source === "all" ? "border-[#263e52] bg-[#263e52] text-white" : "border-[#dde0da] bg-white text-[#59615c]"}`} onClick={() => setSource("all")}>All</button>
             {mobileSourceIds.map((source) => (
-              <button key={source} className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${activeSource === source ? "border-[#d76346] bg-[#fff2ed] text-[#a94833]" : "border-[#dde0da] bg-white text-[#59615c]"}`} onClick={() => { setActiveSource(source); setShowSaved(false); }}>
+              <button key={source} className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${filters.source === source ? "border-[#d76346] bg-[#fff2ed] text-[#a94833]" : "border-[#dde0da] bg-white text-[#59615c]"}`} onClick={() => setSource(source)}>
                 <span style={{ color: sourceMeta[source].accent }}><SourceMark source={source} size={13} /></span>
                 {sourceMeta[source].label}
               </button>
@@ -349,14 +381,14 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
             </div>
           )}
 
-          <div className="pb-28 pt-0 xl:pb-10">
+          <div className="pb-28 pt-0 xl:pb-10" aria-live="polite">
             {visibleItems.map((item) => <FeedCard key={item.id} item={item} saved={saved.has(item.id)} upvoted={upvoted.has(item.id)} onToggleSave={toggleSave} onToggleVote={toggleVote} />)}
             {visibleItems.length === 0 && (
-              <div className="grid place-items-center py-24 text-center">
+              <div className="grid place-items-center py-24 text-center" data-testid="empty-feed">
                 <Search size={25} className="text-[#9aa19d]" />
                 <h2 className="mt-4 font-display text-xl text-[#303632]">No signals found</h2>
                 <p className="mt-1 text-[13px] text-[#858c87]">Try another source or clear search.</p>
-                <button className="mt-4 rounded-md bg-[#292f2c] px-3 py-2 text-[12px] font-semibold text-white" onClick={() => { setQuery(""); setActiveSource("all"); setShowSaved(false); }}>Reset filters</button>
+                <button className="mt-4 rounded-md bg-[#292f2c] px-3 py-2 text-[12px] font-semibold text-white" onClick={resetFilters}>Reset filters</button>
               </div>
             )}
           </div>
@@ -365,29 +397,30 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
         <aside className="hidden bg-[#f8f9f6] px-6 py-7 xl:block">
           <label className="flex h-9 items-center gap-2 rounded-md border border-[#e2e4df] bg-white px-2.5 text-[#a0a6a2] shadow-sm">
             <Search size={17} />
-            <input className="min-w-0 flex-1 bg-transparent text-[12px] font-medium text-[#444] outline-none placeholder:text-[#9da39f]" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search your feed" />
+            <input className="min-w-0 flex-1 bg-transparent text-[12px] font-medium text-[#444] outline-none placeholder:text-[#9da39f]" value={filters.query} onChange={(event) => updateFilters({ query: event.target.value })} placeholder="Search your feed" aria-label="Search your feed" type="search" />
             <kbd className="rounded border border-[#dde0dc] bg-[#f8f9f7] px-1 py-0.5 font-mono text-[9px] text-[#9aa19d]">⌘ K</kbd>
           </label>
 
           <section className="mt-7 border-t border-[#e4e6e1] pt-5">
-            <div className="flex items-center justify-between"><h2 className="font-display text-[15px] text-[#2c322f]">Live sources</h2><button className="text-[10px] font-semibold text-[#dc694b]" onClick={() => refresh()}>Refresh all</button></div>
+            <div className="flex items-center justify-between"><h2 className="font-display text-[15px] text-[#2c322f]">Live sources</h2><button className="text-[10px] font-semibold text-[#dc694b]" onClick={() => void refresh()}>Refresh all</button></div>
             <div className="mt-3 space-y-1.5">
-              {feed.statuses.map((status) => <div key={status.source} className="flex items-center gap-2 rounded px-1 py-1 text-[11px] text-[#59615c]"><span className={`h-1.5 w-1.5 rounded-full ${status.loaded ? "bg-[#67aa72]" : "bg-[#d99157]"}`} /><span className="flex-1">{sourceMeta[status.source].label}</span><span className="font-mono text-[9px] text-[#a1a7a2]">{status.loaded ? "LIVE" : "WAIT"}</span></div>)}</div>
+              {feed.statuses.map((status) => <div key={status.source} className="flex items-center gap-2 rounded px-1 py-1 text-[11px] text-[#59615c]"><span className={`h-1.5 w-1.5 rounded-full ${status.loaded ? "bg-[#67aa72]" : "bg-[#d99157]"}`} /><span className="flex-1">{sourceMeta[status.source].label}</span><span className="font-mono text-[9px] text-[#a1a7a2]">{status.loaded ? "LIVE" : "WAIT"}</span></div>)}
+            </div>
           </section>
 
           <section className="mt-6 border-t border-[#e4e6e1] pt-5">
-            <div className="flex items-center justify-between"><h2 className="font-display text-[15px] text-[#2c322f]">Focus areas</h2><button className="text-[10px] font-semibold text-[#dc694b]" onClick={() => setQuery("")}>Clear</button></div>
+            <div className="flex items-center justify-between"><h2 className="font-display text-[15px] text-[#2c322f]">Focus areas</h2><button className="text-[10px] font-semibold text-[#dc694b]" onClick={() => updateFilters({ query: "" })}>Clear</button></div>
             <div className="mt-3 space-y-1">
-              {["AI research", "SOTA technology", "Business growth", "Global compliance", "Vietnam regulation", "US technology policy", "Social administration"].map((topic) => <button key={topic} className="flex w-full items-center justify-between border-b border-[#e9eae5] py-2 text-left text-[12px] font-medium text-[#3b413e] hover:text-[#dd694b]" onClick={() => setQuery(topic)}>{topic}<Plus size={14} className="text-[#a2a8a4]" /></button>)}
+              {["AI research", "SOTA technology", "Business growth", "Global compliance", "Vietnam regulation", "US technology policy", "Social administration"].map((topic) => <button key={topic} className="flex w-full items-center justify-between border-b border-[#e9eae5] py-2 text-left text-[12px] font-medium text-[#3b413e] hover:text-[#dd694b]" onClick={() => updateFilters({ query: topic })}>{topic}<Plus size={14} className="text-[#a2a8a4]" /></button>)}
             </div>
           </section>
           <p className="mt-7 text-[10px] leading-5 text-[#a1a7a2]">Live public content. Source links always open at origin.<br />Personal Signal © 2026</p>
         </aside>
       </div>
 
-      <label className="mobile-search fixed bottom-[env(safe-area-inset-bottom)] left-3 right-3 z-10 flex h-12 items-center gap-2 rounded-lg border border-[#e0e3de] bg-white px-3 shadow-lg sm:bottom-5 sm:left-5 sm:right-5 xl:hidden lg:left-auto lg:right-5 lg:w-[290px]">
+      <label className="mobile-search fixed left-3 right-3 z-10 flex h-12 items-center gap-2 rounded-lg border border-[#e0e3de] bg-white px-3 shadow-lg sm:bottom-5 sm:left-5 sm:right-5 xl:hidden lg:left-auto lg:right-5 lg:w-[290px]">
         <Search size={17} className="text-[#8f9792]" />
-        <input className="min-w-0 flex-1 bg-transparent text-[12px] outline-none placeholder:text-[#9da39f]" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search your feed" aria-label="Search your feed" type="search" />
+        <input className="min-w-0 flex-1 bg-transparent text-[12px] outline-none placeholder:text-[#9da39f]" value={filters.query} onChange={(event) => updateFilters({ query: event.target.value })} placeholder="Search your feed" aria-label="Search your feed" type="search" />
       </label>
 
       {toast && (

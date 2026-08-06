@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Mono, DM_Sans, Fraunces } from "next/font/google";
 import "./globals.css";
+import { QueryProvider } from "@/components/query-provider";
 import { siteDescription, siteName, siteUrl } from "@/lib/site";
 
 const sans = DM_Sans({ variable: "--signal-sans", subsets: ["latin"] });
@@ -101,7 +102,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${sans.variable} ${mono.variable} ${display.variable}`}>{children}</body>
+      <body className={`${sans.variable} ${mono.variable} ${display.variable}`}><QueryProvider>{children}</QueryProvider></body>
     </html>
   );
 }

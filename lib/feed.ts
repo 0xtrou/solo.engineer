@@ -1,4 +1,5 @@
 import { filterAndRank } from "@/lib/topics";
+import { getE2eFeed } from "@/lib/feed-fixtures";
 import type { FeedItem, FeedResponse, SourceId, SourceStatus } from "@/lib/types";
 
 const REVALIDATE_SECONDS = 300;
@@ -351,6 +352,7 @@ function parseRequestedSources(requested: string | null): LiveSourceId[] {
 
 export async function getFeed(requestedSources: string | null): Promise<FeedResponse> {
   const sources = parseRequestedSources(requestedSources);
+  if (process.env.E2E === "1") return getE2eFeed(sources);
   const settled = await Promise.allSettled(sources.map((source) => adapters[source]()));
   const statuses: SourceStatus[] = [];
   const items = settled.flatMap((result, index) => {
