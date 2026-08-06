@@ -1,11 +1,7 @@
-import { FeedDashboard } from "@/components/feed-dashboard";
-import { getFeed } from "@/lib/feed";
+import { InfrastructureDashboard } from "@/components/feed-dashboard";
 import { siteDescription, siteName, siteUrl } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
-
-export default async function Home() {
-  const initialFeed = await getFeed("all");
+export default function Home() {
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -21,7 +17,7 @@ export default async function Home() {
         name: siteName,
         url: siteUrl.toString(),
         description: siteDescription,
-        applicationCategory: "ProductivityApplication",
+        applicationCategory: "BusinessApplication",
         operatingSystem: "Web",
         browserRequirements: "Requires a modern web browser with JavaScript enabled.",
       },
@@ -31,7 +27,7 @@ export default async function Home() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-      <FeedDashboard initialFeed={initialFeed} />
+      <InfrastructureDashboard />
     </>
   );
 }
