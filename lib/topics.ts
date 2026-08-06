@@ -99,19 +99,6 @@ export function isRelevant(item: FeedItem): boolean {
   return containsProfessionalTopic(text);
 }
 
-export function relevanceScore(item: FeedItem): number {
-  const text = searchableText(item);
-  const base = item.score ?? 0;
-  const topicHits = professionalTerms.filter((term) => text.includes(term)).length;
-  const administrationHits = socialAdministrationTerms.filter((term) => text.includes(term)).length;
-  const sourceBoost = ["arxiv", "openalex", "hugging-face", "microsoft-research", "google-ai", "mit-sloan", "social-media-today", "eu-regulation", "us-regulation", "vietnam-regulation", "world-bank"].includes(item.source) ? 60 : 0;
-  return sourceBoost + topicHits * 24 + administrationHits * 18 + Math.min(base, 250) / 10;
-}
-
 export function filterAndRank(items: FeedItem[]): FeedItem[] {
-  return items.filter(isRelevant).sort((left, right) => {
-    const relevance = relevanceScore(right) - relevanceScore(left);
-    if (relevance !== 0) return relevance;
-    return Date.parse(right.publishedAt) - Date.parse(left.publishedAt);
-  });
+  return items.filter(isRelevant).sort((left, right) => Date.parse(right.publishedAt) - Date.parse(left.publishedAt));
 }
