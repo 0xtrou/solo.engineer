@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { CategoryScores } from "@/components/category-scores";
+import { maxScore } from "@/lib/categories";
 import {
   Activity,
   ArrowUpRight,
@@ -125,7 +126,7 @@ function getCategoryIcon(category: TerminalCategory) {
   return Activity;
 }
 
-function SourceState({ status }: { status: TerminalSourceStatus }) {
+function SourceState({ status, score }: { status: TerminalSourceStatus; score?: number }) {
   return (
     <a
       className="terminal-source-state"
@@ -137,6 +138,7 @@ function SourceState({ status }: { status: TerminalSourceStatus }) {
     >
       <span className={status.loaded ? "terminal-status-dot terminal-status-dot-live" : "terminal-status-dot terminal-status-dot-error"} aria-hidden="true" />
       <span className="min-w-0 truncate">{status.name}</span>
+      {score !== undefined && score > 0 && <span className="font-mono text-[10px] text-[#64dca8]">{score.toFixed(1)}</span>}
       <span className="font-mono text-[10px] text-[#7d8b9c]">{status.loaded ? status.itemCount : "ERR"}</span>
     </a>
   );
@@ -254,16 +256,24 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
     const needle = searchQuery.trim().toLowerCase();
     return byCategory.filter((item) => `${item.title} ${item.summary ?? ""} ${item.sourceName}`.toLowerCase().includes(needle));
   }, [regionalItems, selectedCategory, searchQuery]);
-  const sources = useMemo(() => {
-    const byCount = new Map<string, number>();
-    for (const item of visibleItems) byCount.set(item.sourceId, (byCount.get(item.sourceId) ?? 0) + 1);
-    return uniqueBy(regionalStatuses, (status) => status.sourceId)
-      .map((source) => ({ source, count: byCount.get(source.sourceId) ?? 0 }))
-      .sort((left, right) => right.count - left.count
-        || terminalTierRankForStatus(left.source) - terminalTierRankForStatus(right.source)
-        || left.source.name.localeCompare(right.source.name))
-      .map((entry) => entry.source);
-  }, [regionalStatuses, visibleItems]);
+  const sourceScores = useMemo(() => {
+    const totals = new Map<string, number>();
+    const counts = new Map<string, number>();
+    for (const item of regionalItems) {
+      const peak = maxScore(item.categoryScores);
+      totals.set(item.sourceId, (totals.get(item.sourceId) ?? 0) + peak);
+      counts.set(item.sourceId, (counts.get(item.sourceId) ?? 0) + 1);
+    }
+    const avg = new Map<string, number>();
+    for (const [sourceId, total] of totals) avg.set(sourceId, counts.has(sourceId) ? total / (counts.get(sourceId) ?? 1) : 0);
+    return avg;
+  }, [regionalItems]);
+  const sources = useMemo(() =>
+    uniqueBy(regionalStatuses, (status) => status.sourceId)
+      .map((source, index) => ({ source, index }))
+      .sort((left, right) => terminalTierRankForStatus(left.source) - terminalTierRankForStatus(right.source) || left.index - right.index)
+      .map((entry) => entry.source),
+  [regionalStatuses]);
   const liveSourceCount = sources.filter((source) => source.loaded).length;
   const hasVisibleData = visibleItems.length > 0;
   const categoryCounts = useMemo(() => new Map(categoryOrder.map((category) => [category, regionalItems.filter((item) => item.category === category).length])), [regionalItems]);
@@ -380,7 +390,7 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
           <div className="mt-7 border-t border-[#203040] pt-6">
             <p className="terminal-label">INGESTION</p>
             <div className="mt-2 space-y-1.5">
-              {sources.map((source) => <SourceState key={source.sourceId} status={source} />)}
+              {sources.map((source) => <SourceState key={source.sourceId} status={source} score={sourceScores.get(source.sourceId)} />)}
             </div>
           </div>
 
@@ -453,12 +463,15 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
               <p className="terminal-label">SOURCE CAPTURE</p>
               <p className="mt-1 text-[12px] text-[#9fb0c2]">Records from live regional adapters.</p>
               <div className="mt-4 space-y-3">
-                {sourceCapture.length ? sourceCapture.map((source) => (
+                {sourceCapture.length ? sourceCapture.map((source) => {
+                  const score = sourceScores.get(source.sourceId) ?? 0;
+                  return (
                   <div key={source.sourceId}>
-                    <span className="flex items-center justify-between gap-3 text-[11px] text-[#b5c4d1]"><span className="flex min-w-0 items-center gap-1.5 truncate"><span className={source.loaded ? "terminal-status-dot terminal-status-dot-live" : "terminal-status-dot terminal-status-dot-error"} />{source.name}</span><span className="font-mono text-[#dce8f1]">{source.count}</span></span>
+                    <span className="flex items-center justify-between gap-3 text-[11px] text-[#b5c4d1]"><span className="flex min-w-0 items-center gap-1.5 truncate"><span className={source.loaded ? "terminal-status-dot terminal-status-dot-live" : "terminal-status-dot terminal-status-dot-error"} />{source.name}</span><span className="flex items-center gap-1.5 font-mono text-[#dce8f1]">{score > 0 && <span className="text-[#64dca8]">{score.toFixed(1)}</span>}<span>{source.count}</span></span></span>
                     <span className="mt-1.5 block h-1.5 overflow-hidden bg-[#172b3b]"><span className={source.loaded ? "block h-full bg-[#73aefa] transition-[width] duration-300" : "block h-full bg-[#ff9079] transition-[width] duration-300"} style={{ width: `${(source.count / maxSourceCount) * 100}%` }} /></span>
                   </div>
-                )) : <p className="text-[12px] leading-5 text-[#7e92a4]">Waiting for source records.</p>}
+                  );
+                }) : <p className="text-[12px] leading-5 text-[#7e92a4]">Waiting for source records.</p>}
               </div>
             </section>
           </section>
@@ -489,7 +502,9 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
               <section className="border border-[#223547] bg-[#09141e] p-4">
                 <p className="terminal-label">SOURCE HEALTH</p>
                 <div className="mt-4 space-y-3">
-                  {sources.map((source) => (
+                  {sources.map((source) => {
+                    const score = sourceScores.get(source.sourceId) ?? 0;
+                    return (
                     <div key={source.sourceId} className="border-b border-[#1e3040] pb-3 last:border-b-0 last:pb-0">
                       <div className="flex items-start gap-2">
                         {source.loaded ? <Check className="mt-0.5 shrink-0 text-[#60d7a5]" size={14} /> : <CircleAlert className="mt-0.5 shrink-0 text-[#ff9179]" size={14} />}
@@ -506,11 +521,12 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
                               </span>
                             )}
                           </div>
-                          <p className="mt-0.5 font-mono text-[10px] leading-4 text-[#788b9e]">{source.loaded ? source.message ?? `${source.itemCount} LIVE RECORD${source.itemCount === 1 ? "" : "S"}` : source.message ?? "UNAVAILABLE"}</p>
+                          <p className="mt-0.5 font-mono text-[10px] leading-4 text-[#788b9e]">{source.loaded ? `${source.message ?? `${source.itemCount} LIVE RECORD${source.itemCount === 1 ? "" : "S"}`}${score > 0 ? ` · ${score.toFixed(1)} avg score` : ""}` : source.message ?? "UNAVAILABLE"}</p>
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </section>
 
