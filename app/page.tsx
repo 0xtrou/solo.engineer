@@ -1,11 +1,7 @@
 import { InfrastructureDashboard } from "@/components/feed-dashboard";
-import { getFeed } from "@/lib/feed";
 import { siteDescription, siteName, siteUrl } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
-
-export default async function Home() {
-  const initialFeed = await getFeed("all");
+export default function Home() {
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -31,7 +27,7 @@ export default async function Home() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-      <InfrastructureDashboard initialFeed={initialFeed} />
+      <InfrastructureDashboard />
     </>
   );
 }
