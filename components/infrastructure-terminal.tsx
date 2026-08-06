@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
+import { fetchTerminal } from "@/lib/client/terminal-api";
 import {
   isTerminalRegion,
   terminalRegionIds,
@@ -27,10 +28,11 @@ import {
   type TerminalFeedResponse,
   type TerminalRegionId,
   type TerminalSourceStatus,
+  getTerminalSourceStatuses,
 } from "@/lib/terminal-feed";
 
 type InfrastructureTerminalProps = {
-  initialFeed: TerminalFeedResponse;
+  initialFeed?: TerminalFeedResponse;
 };
 
 const regionLabels: Record<TerminalRegionId, string> = {
@@ -142,14 +144,11 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
   const selectedRegion: TerminalRegionId = isTerminalRegion(regionParam) ? regionParam : "us";
   const selectedCategory = parseCategory(searchParams.get("sector"));
 
-  const terminalQuery = useQuery({
-    queryKey: ["terminal-feed"],
-    queryFn: async () => {
-      const response = await fetch("/api/terminal");
-      if (!response.ok) throw new Error(`Terminal feed failed: ${response.status}`);
-      return response.json() as Promise<TerminalFeedResponse>;
-    },
+  const terminalQuery = useQuery<TerminalFeedResponse>({
+    queryKey: ["terminal-feed", { region: selectedRegion, category: selectedCategory }],
+    queryFn: ({ signal }) => fetchTerminal({ region: selectedRegion, category: selectedCategory === "all" ? "all" : categorySlug(selectedCategory) }, signal),
     initialData: initialFeed,
+    placeholderData: (previous) => previous,
     refetchInterval: 300_000,
     refetchOnWindowFocus: false,
   });
@@ -171,8 +170,8 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
     setMobileMenuOpen(false);
   }, [pathname, router, searchParams, selectedCategory, selectedRegion]);
 
-  const regionalItems = useMemo(() => feed.items.filter((item) => item.region === selectedRegion), [feed.items, selectedRegion]);
-  const regionalStatuses = useMemo(() => feed.statuses.filter((status) => status.region === selectedRegion), [feed.statuses, selectedRegion]);
+  const regionalItems = useMemo(() => feed?.items.filter((item) => item.region === selectedRegion) ?? [], [feed, selectedRegion]);
+  const regionalStatuses = useMemo(() => (feed?.statuses ?? getTerminalSourceStatuses()).filter((status) => status.region === selectedRegion), [feed, selectedRegion]);
   const visibleItems = useMemo(() => selectedCategory === "all" ? regionalItems : regionalItems.filter((item) => item.category === selectedCategory), [regionalItems, selectedCategory]);
   const sources = useMemo(() => uniqueBy(regionalStatuses, (status) => status.sourceId), [regionalStatuses]);
   const liveSourceCount = sources.filter((source) => source.loaded).length;
@@ -259,7 +258,7 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
             <div className="flex min-w-[220px] items-center justify-between gap-4 border border-[#263b4d] bg-[#0a1722] px-4 py-3">
               <div>
                 <p className="font-mono text-[10px] tracking-[0.1em] text-[#8496a8]">LAST SOURCE FETCH</p>
-                <p className="mt-1 font-mono text-[11px] text-[#c4d1dc]" data-testid="terminal-fetched-at">{formatTimestamp(feed.fetchedAt)}</p>
+                <p className="mt-1 font-mono text-[11px] text-[#c4d1dc]" data-testid="terminal-fetched-at">{feed ? formatTimestamp(feed.fetchedAt) : "Loading"}</p>
               </div>
               {terminalQuery.isError ? <CircleAlert className="text-[#ff8f75]" size={18} /> : <Check className="text-[#62daa7]" size={18} />}
             </div>

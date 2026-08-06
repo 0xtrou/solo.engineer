@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { InfrastructureTerminal } from "@/components/infrastructure-terminal";
-import { getTerminalFeed } from "@/lib/terminal-feed";
 import { siteName } from "@/lib/site";
-
-export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "AI Infrastructure Terminal",
@@ -16,7 +14,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function TerminalPage() {
-  const initialFeed = await getTerminalFeed();
-  return <InfrastructureTerminal initialFeed={initialFeed} />;
+export default function TerminalPage() {
+  return (
+    <Suspense fallback={<main className="terminal-shell min-h-screen bg-[#071018]" />}>
+      <InfrastructureTerminal />
+    </Suspense>
+  );
 }

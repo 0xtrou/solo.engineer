@@ -475,10 +475,30 @@ function parseRequestedSources(requested: string | null): LiveSourceId[] {
   return values.length > 0 ? values : (Object.keys(adapters) as LiveSourceId[]);
 }
 
-export async function getFeed(requestedSources: string | null): Promise<FeedResponse> {
+async function settleWithConcurrency<T>(tasks: Array<() => Promise<T>>, concurrency = 4): Promise<PromiseSettledResult<T>[]> {
+  const results: PromiseSettledResult<T>[] = new Array(tasks.length);
+  let nextIndex = 0;
+
+  async function worker() {
+    while (nextIndex < tasks.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      try {
+        results[index] = { status: "fulfilled", value: await tasks[index]() };
+      } catch (reason) {
+        results[index] = { status: "rejected", reason };
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, tasks.length) }, () => worker()));
+  return results;
+}
+
+export async function getFeedSnapshot(requestedSources: string | null): Promise<FeedResponse> {
   const sources = parseRequestedSources(requestedSources);
   if (process.env.E2E === "1") return getE2eFeed(sources);
-  const settled = await Promise.allSettled(sources.map((source) => adapters[source]()));
+  const settled = await settleWithConcurrency(sources.map((source) => adapters[source]), 4);
   const statuses: SourceStatus[] = [];
   const items = settled.flatMap((result, index) => {
     const source = sources[index];
@@ -490,8 +510,14 @@ export async function getFeed(requestedSources: string | null): Promise<FeedResp
     return [];
   });
 
+  return { items, statuses, fetchedAt: new Date().toISOString() };
+}
+
+export async function getFeed(requestedSources: string | null): Promise<FeedResponse> {
+  const snapshot = await getFeedSnapshot(requestedSources);
+
   const balancedItems = Object.values(
-    items.reduce<Partial<Record<SourceId, FeedItem[]>>>((groups, item) => {
+    snapshot.items.reduce<Partial<Record<SourceId, FeedItem[]>>>((groups, item) => {
       const group = groups[item.source] ?? [];
       group.push(item);
       groups[item.source] = group;
@@ -501,7 +527,7 @@ export async function getFeed(requestedSources: string | null): Promise<FeedResp
 
   return {
     items: filterAndRank(balancedItems).slice(0, 60),
-    statuses,
-    fetchedAt: new Date().toISOString(),
+    statuses: snapshot.statuses,
+    fetchedAt: snapshot.fetchedAt,
   };
 }

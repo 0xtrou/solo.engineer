@@ -361,6 +361,15 @@ export function isTerminalRegion(value: string | null | undefined): value is Ter
   return typeof value === "string" && terminalRegionIds.includes(value as TerminalRegionId);
 }
 
+export function getTerminalSourceStatuses(): TerminalSourceStatus[] {
+  return Object.values(sourceDefinitions).map((source) => ({
+    ...source,
+    loaded: false,
+    itemCount: 0,
+    message: "Loading source status",
+  }));
+}
+
 export async function getTerminalFeed(): Promise<TerminalFeedResponse> {
   const results = await Promise.all(adapters.map(async ({ source, load }) => {
     try {

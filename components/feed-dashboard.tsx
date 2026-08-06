@@ -37,6 +37,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { fetchFeed } from "@/lib/client/feed-api";
 import {
   defaultFeedFilters,
   getFeedCategorySlug,
@@ -53,7 +54,7 @@ import { matchesFeedSearch } from "@/lib/feed-search";
 import { sourceMeta } from "@/lib/source-meta";
 import type { FeedItem, FeedResponse, SourceId } from "@/lib/types";
 
-type FeedDashboardProps = { initialFeed: FeedResponse };
+type FeedDashboardProps = { initialFeed?: FeedResponse };
 type ToastKind = "success" | "warning";
 type Toast = { message: string; kind?: ToastKind } | null;
 
@@ -245,19 +246,15 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
   const [toast, setToast] = useState<Toast>(null);
   const categorySlug = getFeedCategorySlug(filters.view);
   const sourceRequest = getFeedSourceRequest(filters);
-  const isDefaultFeed = categorySlug === "focused" && filters.source === "all";
-  const feedQuery = useQuery({
-    queryKey: ["feed", { category: categorySlug, source: filters.source }],
-    queryFn: async (): Promise<FeedResponse> => {
-      const params = new URLSearchParams({ category: categorySlug, sources: sourceRequest });
-      const response = await fetch(`/api/feed?${params}`, { cache: "no-store" });
-      if (!response.ok) throw new Error("Feed request failed");
-      return response.json() as Promise<FeedResponse>;
-    },
-    initialData: isDefaultFeed ? initialFeed : undefined,
+  const feedQuery = useQuery<FeedResponse>({
+    queryKey: ["feed", { category: categorySlug, source: sourceRequest, query: filters.query }],
+    queryFn: ({ signal }) => fetchFeed({ category: categorySlug, sources: sourceRequest, query: filters.query }, signal),
+    initialData: initialFeed,
+    placeholderData: (previous) => previous,
     staleTime: 300_000,
+    refetchOnReconnect: true,
   });
-  const feed = feedQuery.data ?? initialFeed;
+  const feed = feedQuery.data;
 
   const notify = useCallback((message: string, kind: ToastKind = "success") => {
     setToast({ message, kind });
@@ -288,12 +285,12 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
     try {
       const nextFeed = await feedQuery.refetch();
       if (nextFeed.isError) throw nextFeed.error;
-      const unavailable = (nextFeed.data ?? initialFeed).statuses.filter((status) => !status.loaded);
+      const unavailable = (nextFeed.data ?? feed)?.statuses.filter((status) => !status.loaded) ?? [];
       notify(unavailable.length ? `Updated — ${unavailable.length} source${unavailable.length > 1 ? "s" : ""} unavailable` : "Your feed is fresh");
     } catch {
       notify("Could not refresh right now", "warning");
     }
-  }, [feedQuery, initialFeed, notify]);
+  }, [feedQuery, feed, notify]);
 
   const toggleSave = (id: string) => {
     setSaved((current) => {
@@ -317,13 +314,13 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
   };
 
   const visibleItems = useMemo(() => {
+    if (!feed) return [];
     const items = feed.items.filter((item) => feedMatchesFilters(item, filters, saved));
-    if (filters.view === "research") return [...items].sort((left, right) => (right.score ?? 0) - (left.score ?? 0));
     return items;
-  }, [feed.items, filters, saved]);
+  }, [feed, filters, saved]);
 
-  const loadedCount = feed.statuses.filter((status) => status.loaded).length;
-  const unavailableStatuses = feed.statuses.filter((status) => !status.loaded);
+  const loadedCount = feed?.statuses.filter((status) => status.loaded).length ?? 0;
+  const unavailableStatuses = feed?.statuses.filter((status) => !status.loaded) ?? [];
   const isRefreshing = feedQuery.isFetching;
 
   const setSource = (source: SelectedSource) => {
@@ -363,7 +360,7 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
             <button className="rounded p-0.5 hover:bg-[#edf0ec]" onClick={() => notify("Sources are configured in your local environment")} aria-label="Source settings"><Plus size={16} /></button>
           </div>
           <nav className="mt-2 space-y-1" aria-label="Research sources">
-            <button className={`source-item ${filters.source === "all" ? "source-item-active" : ""}`} onClick={() => setSource("all")} data-testid="source-filter-all"><Sparkles size={16} /> All sources <span>{feed.items.length}</span></button>
+            <button className={`source-item ${filters.source === "all" ? "source-item-active" : ""}`} onClick={() => setSource("all")} data-testid="source-filter-all"><Sparkles size={16} /> All sources <span>{feed?.items.length ?? 0}</span></button>
             {researchSourceIds.map((source) => (
               <button key={source} className={`source-item ${filters.source === source ? "source-item-active" : ""}`} onClick={() => setSource(source)} data-testid={`source-filter-${source}`}>
                 <span style={{ color: sourceMeta[source].accent }}><SourceMark source={source} size={16} /></span>{sourceMeta[source].label}
@@ -456,7 +453,7 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
           <section className="mt-7 border-t border-[#e4e6e1] pt-5">
             <div className="flex items-center justify-between"><h2 className="font-display text-[15px] text-[#2c322f]">Live sources</h2><button className="text-[10px] font-semibold text-[#dc694b]" onClick={() => void refresh()}>Refresh all</button></div>
             <div className="mt-3 space-y-1.5">
-              {feed.statuses.map((status) => <div key={status.source} className="flex items-center gap-2 rounded px-1 py-1 text-[11px] text-[#59615c]"><span className={`h-1.5 w-1.5 rounded-full ${status.loaded ? "bg-[#67aa72]" : "bg-[#d99157]"}`} /><span className="flex-1">{sourceMeta[status.source].label}</span><span className="font-mono text-[9px] text-[#a1a7a2]">{status.loaded ? "LIVE" : "WAIT"}</span></div>)}
+              {feed?.statuses.map((status) => <div key={status.source} className="flex items-center gap-2 rounded px-1 py-1 text-[11px] text-[#59615c]"><span className={`h-1.5 w-1.5 rounded-full ${status.loaded ? "bg-[#67aa72]" : "bg-[#d99157]"}`} /><span className="flex-1">{sourceMeta[status.source].label}</span><span className="font-mono text-[9px] text-[#a1a7a2]">{status.loaded ? "LIVE" : "WAIT"}</span></div>)}
             </div>
           </section>
 
