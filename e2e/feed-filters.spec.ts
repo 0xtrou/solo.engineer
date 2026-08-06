@@ -68,6 +68,14 @@ test.describe("feed URL filters", () => {
     await expect(page.getByTestId("feed-card")).toHaveCount(1);
   });
 
+  test("matches social administration through curated topic aliases", async ({ page }) => {
+    await page.goto("/?q=Social+administration");
+
+    await expect(page.getByRole("searchbox", { name: "Search your feed" })).toHaveValue("Social administration");
+    await expect(page.getByTestId("feed-card").first()).toBeVisible();
+    await expect(page.getByTestId("empty-feed")).toHaveCount(0);
+  });
+
   test("every category renders data", async ({ page }) => {
     for (const view of ["focused", "research", "policy"] as const) {
       await page.goto(`/?view=${view}`);

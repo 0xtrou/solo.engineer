@@ -48,6 +48,7 @@ import {
   type SelectedSource,
   writeFeedFilters,
 } from "@/lib/feed-filters";
+import { matchesFeedSearch } from "@/lib/feed-search";
 import { sourceMeta } from "@/lib/source-meta";
 import type { FeedItem, FeedResponse, SourceId } from "@/lib/types";
 
@@ -203,8 +204,7 @@ function feedMatchesFilters(item: FeedItem, filters: FeedFilters, saved: Set<str
   if (filters.view === "policy" && !(policySourceIds as readonly SourceId[]).includes(item.source)) return false;
   if (filters.saved && !saved.has(item.id)) return false;
 
-  const query = filters.query.toLowerCase();
-  return !query || `${item.title} ${item.summary} ${item.author} ${item.tag || ""}`.toLowerCase().includes(query);
+  return matchesFeedSearch(item, filters.query);
 }
 
 export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
