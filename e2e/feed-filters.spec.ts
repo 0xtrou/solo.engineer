@@ -1,38 +1,98 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("AI infrastructure dashboard", () => {
-  test("renders the US lens by default", async ({ page }) => {
-    await page.goto("/");
+const researchSources = ["arxiv", "hacker-news", "github", "stack-overflow", "dev", "indie-hackers", "bluesky", "openalex", "hugging-face", "microsoft-research", "google-ai", "mit-sloan", "social-media-today"];
+const policySources = ["eu-regulation", "us-regulation", "vietnam-regulation", "world-bank"];
 
-    await expect(page).toHaveTitle(/AI Infrastructure Intelligence/);
-    await expect(page.getByRole("heading", { name: /AI infrastructure in motion/i })).toBeVisible();
-    await expect(page.locator(".country-tab.active")).toContainText("United States");
-    await expect(page.locator(".news-row")).toHaveCount(5);
+test.describe("feed URL filters", () => {
+  test("restores source, category, and search from a shared URL", async ({ page }) => {
+    await page.goto("/?source=vietnam-regulation&view=policy&q=Vietnam");
+
+    await expect(page).toHaveURL(/source=vietnam-regulation/);
+    await expect(page).toHaveURL(/view=policy/);
+    await expect(page).toHaveURL(/q=Vietnam/);
+    await expect(page.getByTestId("view-filter-policy")).toHaveClass(/tab-button-active/);
+    await expect(page.getByTestId("source-filter-vietnam-regulation")).toHaveClass(/source-item-active/);
+    await expect(page.getByTestId("feed-card")).toHaveCount(1);
+    await expect(page.getByTestId("feed-card")).toHaveAttribute("data-source", "vietnam-regulation");
+    await expect(page.getByRole("searchbox", { name: "Search your feed" })).toHaveValue("Vietnam");
   });
 
-  test("switches country lenses and refreshes the signal stream", async ({ page }) => {
+  test("writes category, source, and search filters to the URL", async ({ page }) => {
     await page.goto("/");
+    await expect(page.getByTestId("feed-card").first()).toBeVisible();
 
-    await page.locator(".country-tab").filter({ hasText: "Vietnam" }).click();
-    await expect(page.locator(".country-tab.active")).toContainText("Vietnam");
-    await expect(page.locator(".news-row").first()).toContainText("Southern industrial parks");
+    const researchFeedRequest = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return url.pathname === "/api/feed" && url.searchParams.get("category") === "research-ai";
+    });
+    await page.getByTestId("view-filter-research").click();
+    await researchFeedRequest;
+    await expect(page).toHaveURL(/view=research/);
+    await expect(page.getByTestId("feed-card")).toHaveCount(researchSources.length);
 
-    await page.locator(".country-tab").filter({ hasText: "China" }).click();
-    await expect(page.locator(".country-tab.active")).toContainText("China");
-    await expect(page.locator(".news-row").first()).toContainText("Domestic accelerator roadmaps");
+    const arxivFeedRequest = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return url.pathname === "/api/feed" && url.searchParams.get("category") === "research-ai" && url.searchParams.get("sources") === "arxiv";
+    });
+    await page.getByTestId("source-filter-arxiv").click();
+    await arxivFeedRequest;
+    await expect(page).toHaveURL(/source=arxiv/);
+    await expect(page).toHaveURL(/view=research/);
+    await expect(page.getByTestId("feed-card")).toHaveCount(1);
+    await expect(page.getByTestId("feed-card")).toHaveAttribute("data-source", "arxiv");
+
+    const search = page.getByRole("searchbox", { name: "Search your feed" });
+    await search.fill("Agentic");
+    await expect(page).toHaveURL(/q=Agentic/);
+    await expect(page.getByTestId("feed-card")).toHaveCount(1);
+
+    await page.reload();
+    await expect(search).toHaveValue("Agentic");
+    await expect(page.getByTestId("feed-card")).toHaveCount(1);
   });
 
-  test("filters, searches, and saves signals", async ({ page }) => {
-    await page.goto("/");
+  test("normalizes invalid filters and persists local library state", async ({ page }) => {
+    await page.goto("/?source=unknown&view=invalid&q=%20%20Agentic%20%20&saved=true");
 
-    await page.getByRole("combobox", { name: "Filter signals" }).selectOption("Policy");
-    await expect(page.locator(".news-row")).toHaveCount(1);
-    await expect(page.locator(".news-row").first()).toContainText("Federal permitting reform");
+    await expect(page.getByTestId("view-filter-focused")).toHaveClass(/tab-button-active/);
+    await expect(page.getByTestId("source-filter-all")).toHaveClass(/source-item-active/);
+    await expect(page.getByRole("searchbox", { name: "Search your feed" })).toHaveValue("Agentic");
+    await expect(page.getByTestId("feed-card")).toHaveCount(1);
 
-    await page.getByPlaceholder("Search signals").fill("permitting");
-    await expect(page.locator(".news-row")).toHaveCount(1);
+    await page.getByRole("button", { name: "Save bookmark" }).click();
+    await page.getByRole("button", { name: /Library/ }).click();
+    await expect(page).toHaveURL(/saved=1/);
+    await expect(page.getByTestId("feed-card")).toHaveCount(1);
 
-    await page.getByRole("button", { name: "Save story" }).click();
-    await expect(page.locator(".bookmark.saved")).toHaveCount(1);
+    await page.reload();
+    await expect(page.getByTestId("feed-card")).toHaveCount(1);
+  });
+
+  test("matches social administration through curated topic aliases", async ({ page }) => {
+    await page.goto("/?q=Social+administration");
+
+    await expect(page.getByRole("searchbox", { name: "Search your feed" })).toHaveValue("Social administration");
+    await expect(page.getByTestId("feed-card").first()).toBeVisible();
+    await expect(page.getByTestId("empty-feed")).toHaveCount(0);
+  });
+
+  test("every category renders data", async ({ page }) => {
+    for (const view of ["focused", "research", "policy"] as const) {
+      await page.goto(`/?view=${view}`);
+      await expect(page.getByTestId(`view-filter-${view}`)).toHaveClass(/tab-button-active/);
+      await expect(page.getByTestId("feed-card").first()).toBeVisible();
+      await expect(page.getByTestId("empty-feed")).toHaveCount(0);
+    }
+  });
+
+  test("every configured source filter renders data", async ({ page }) => {
+    for (const source of [...researchSources, ...policySources]) {
+      await page.goto("/");
+      await page.getByTestId(`source-filter-${source}`).click();
+      await expect(page).toHaveURL(new RegExp(`source=${source}`));
+      await expect(page.getByTestId("feed-card")).toHaveCount(1);
+      await expect(page.getByTestId("feed-card")).toHaveAttribute("data-source", source);
+      await expect(page.getByTestId("empty-feed")).toHaveCount(0);
+    }
   });
 });

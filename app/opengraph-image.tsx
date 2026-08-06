@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Signal — AI Infrastructure Intelligence";
+export const alt = "Signal — Personal Web Reader";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -10,8 +10,8 @@ export default function OpenGraphImage() {
       <div
         style={{
           alignItems: "center",
-          background: "#071014",
-          color: "#edf6f5",
+          background: "#f7f8f5",
+          color: "#202426",
           display: "flex",
           height: "100%",
           padding: "72px",
@@ -20,22 +20,22 @@ export default function OpenGraphImage() {
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", maxWidth: "880px" }}>
-          <div style={{ alignItems: "center", color: "#8da6a2", display: "flex", fontSize: 24, fontWeight: 700, letterSpacing: 4 }}>
-            <div style={{ display: "flex", gap: 5, height: 28, marginRight: 16, width: 28 }}>
-              <div style={{ alignSelf: "flex-end", background: "#64ddef", height: 13, width: 6 }} />
-              <div style={{ alignSelf: "flex-end", background: "#64ddef", height: 26, width: 6 }} />
-              <div style={{ alignSelf: "flex-end", background: "#b2e46c", height: 18, width: 6 }} />
+          <div style={{ alignItems: "center", color: "#68716c", display: "flex", fontSize: 24, fontWeight: 700, letterSpacing: 4 }}>
+            <div style={{ display: "flex", height: 28, marginRight: 16, position: "relative", transform: "rotate(-12deg)", width: 28 }}>
+              <div style={{ background: "#e8bd4d", borderRadius: "999px", bottom: 0, height: 13, left: 0, position: "absolute", width: 13 }} />
+              <div style={{ background: "#f27252", borderRadius: "999px", bottom: 0, height: 13, position: "absolute", right: 0, width: 13 }} />
+              <div style={{ background: "#263e52", borderRadius: "999px", height: 13, left: 8, position: "absolute", top: 0, width: 13 }} />
             </div>
-            AI INFRASTRUCTURE INTELLIGENCE
+            PERSONAL WEB READER
           </div>
           <div style={{ fontFamily: "serif", fontSize: 84, fontWeight: 700, letterSpacing: -4, lineHeight: 1.05, marginTop: 34 }}>
-            Infrastructure in motion.
+            Worth your attention.
           </div>
-          <div style={{ color: "#8da6a2", fontSize: 31, lineHeight: 1.35, marginTop: 26 }}>
-            Power, policy, hardware, land, labor, and capital signals across US, Vietnam, and China.
+          <div style={{ color: "#68716c", fontSize: 31, lineHeight: 1.35, marginTop: 26 }}>
+            AI research, science, SOTA technology, business growth, and policy signals — one calm feed.
           </div>
         </div>
-        <div style={{ bottom: 70, color: "#64ddef", display: "flex", fontSize: 24, fontWeight: 700, position: "absolute", right: 72 }}>
+        <div style={{ bottom: 70, color: "#d76346", display: "flex", fontSize: 24, fontWeight: 700, position: "absolute", right: 72 }}>
           signal
         </div>
       </div>

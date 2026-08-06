@@ -3,17 +3,17 @@ import { siteDescription, siteName } from "@/lib/site";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: `${siteName} — AI Infrastructure Intelligence`,
+    name: `${siteName} — Personal Web Reader`,
     short_name: siteName,
     description: siteDescription,
     start_url: "/",
     scope: "/",
     display: "standalone",
-    background_color: "#071014",
-    theme_color: "#071014",
+    background_color: "#f7f8f5",
+    theme_color: "#f7f8f5",
     orientation: "portrait-primary",
     lang: "en",
-    categories: ["business", "news", "productivity", "technology"],
+    categories: ["business", "education", "news", "productivity"],
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
