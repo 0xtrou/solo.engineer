@@ -1,4 +1,8 @@
-www.solo.engineer, solo.engineer {
+solo.engineer {
+	redir https://www.solo.engineer{uri} permanent
+}
+
+www.solo.engineer {
 	reverse_proxy 127.0.0.1:3002 {
 		flush_interval -1
 	}
