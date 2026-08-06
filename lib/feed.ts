@@ -19,6 +19,16 @@ type BlueskyPost = { post: { uri: string; author: { displayName?: string; handle
 type FederalDocument = { document_number: string; title: string; abstract?: string; publication_date: string; html_url: string; agencies?: Array<{ name?: string }>; type?: string };
 type VietnamDocument = { _id: string; tenvb?: string; mavb?: string; tomtat?: string; ngaybanhanh?: string; ngaycapnhat?: string; linhvuc_id?: Array<{ tenlinhvuc_en?: string }>; coquanbanhanh_id?: Array<{ tencoquan_en?: string }> };
 type WorldBankObservation = { indicator?: { value?: string }; country?: { value?: string }; countryiso3code?: string; date?: string; value?: number | null };
+type OpenAlexWork = {
+  id: string;
+  display_name?: string;
+  publication_date?: string;
+  cited_by_count?: number;
+  type?: string;
+  primary_location?: { landing_page_url?: string; source?: { display_name?: string } };
+  authorships?: Array<{ author?: { display_name?: string } }>;
+  concepts?: Array<{ display_name?: string }>;
+};
 
 const vietnamTopicTerms = [
   "administrative",
@@ -328,6 +338,58 @@ async function getBluesky(): Promise<FeedItem[]> {
   });
 }
 
+function rssItemsToFeedItems(entries: ReturnType<typeof parseRssItems>, source: SourceId, fallbackAuthor: string, fallbackSummary: string, fallbackTag: string): FeedItem[] {
+  return entries
+    .filter((entry) => entry.title && entry.link)
+    .map((entry) => ({
+      id: `${source}-${entry.id}`,
+      source,
+      title: entry.title,
+      summary: shorten(entry.description || fallbackSummary),
+      author: entry.author || fallbackAuthor,
+      url: entry.link,
+      publishedAt: entry.publishedAt || new Date().toISOString(),
+      tag: entry.category || fallbackTag,
+    }));
+}
+
+async function getOpenAlex(): Promise<FeedItem[]> {
+  const result = await fetchJson<{ results: OpenAlexWork[] }>("https://api.openalex.org/works?search=artificial%20intelligence&sort=publication_date:desc&per-page=20");
+  return result.results
+    .filter((work) => work.display_name && work.primary_location?.landing_page_url)
+    .map((work) => ({
+      id: `openalex-${work.id}`,
+      source: "openalex" as const,
+      title: work.display_name || "Untitled academic work",
+      summary: shorten(`OpenAlex record for ${work.primary_location?.source?.display_name || "an academic publication"}.`),
+      author: work.authorships?.map((authorship) => authorship.author?.display_name).filter((name): name is string => Boolean(name)).slice(0, 3).join(", ") || "OpenAlex authors",
+      url: work.primary_location?.landing_page_url || work.id,
+      publishedAt: work.publication_date ? `${work.publication_date}T00:00:00.000Z` : new Date().toISOString(),
+      score: work.cited_by_count,
+      tag: work.concepts?.[0]?.display_name || work.type || "Academic research",
+    }));
+}
+
+async function getHuggingFace(): Promise<FeedItem[]> {
+  return rssItemsToFeedItems(await fetchRss("https://huggingface.co/blog/feed.xml"), "hugging-face", "Hugging Face", "Open this Hugging Face research or tooling update.", "AI engineering");
+}
+
+async function getMicrosoftResearch(): Promise<FeedItem[]> {
+  return rssItemsToFeedItems(await fetchRss("https://www.microsoft.com/en-us/research/feed/"), "microsoft-research", "Microsoft Research", "Open this Microsoft Research publication.", "Computer science");
+}
+
+async function getGoogleAi(): Promise<FeedItem[]> {
+  return rssItemsToFeedItems(await fetchRss("https://blog.google/technology/ai/rss/"), "google-ai", "Google AI", "Open this Google AI research or engineering update.", "AI technology");
+}
+
+async function getMitSloan(): Promise<FeedItem[]> {
+  return rssItemsToFeedItems(await fetchRss("https://sloanreview.mit.edu/feed/"), "mit-sloan", "MIT Sloan Management Review", "Open this management research article.", "Management research");
+}
+
+async function getSocialMediaToday(): Promise<FeedItem[]> {
+  return rssItemsToFeedItems(await fetchRss("https://www.socialmediatoday.com/feeds/news/"), "social-media-today", "Social Media Today", "Open this social media administration update.", "Social media administration");
+}
+
 type LiveSourceId = Exclude<SourceId, "hashnode" | "discord" | "mastodon">;
 
 const adapters: Record<LiveSourceId, () => Promise<FeedItem[]>> = {
@@ -342,6 +404,12 @@ const adapters: Record<LiveSourceId, () => Promise<FeedItem[]>> = {
   "vietnam-regulation": getVietnamRegulation,
   "world-bank": getWorldBank,
   bluesky: getBluesky,
+  openalex: getOpenAlex,
+  "hugging-face": getHuggingFace,
+  "microsoft-research": getMicrosoftResearch,
+  "google-ai": getGoogleAi,
+  "mit-sloan": getMitSloan,
+  "social-media-today": getSocialMediaToday,
 };
 
 function parseRequestedSources(requested: string | null): LiveSourceId[] {

@@ -35,6 +35,7 @@ const professionalTerms = [
   "science",
   "security",
   "semiconductor",
+  "social media",
   "software",
   "startup",
   "technology",
@@ -65,6 +66,12 @@ const lowSignalTerms = [
 
 const alwaysRelevantSources = new Set<FeedItem["source"]>([
   "arxiv",
+  "openalex",
+  "hugging-face",
+  "microsoft-research",
+  "google-ai",
+  "mit-sloan",
+  "social-media-today",
   "github",
   "stack-overflow",
   "world-bank",
@@ -97,7 +104,7 @@ export function relevanceScore(item: FeedItem): number {
   const base = item.score ?? 0;
   const topicHits = professionalTerms.filter((term) => text.includes(term)).length;
   const administrationHits = socialAdministrationTerms.filter((term) => text.includes(term)).length;
-  const sourceBoost = ["arxiv", "eu-regulation", "us-regulation", "vietnam-regulation", "world-bank"].includes(item.source) ? 60 : 0;
+  const sourceBoost = ["arxiv", "openalex", "hugging-face", "microsoft-research", "google-ai", "mit-sloan", "social-media-today", "eu-regulation", "us-regulation", "vietnam-regulation", "world-bank"].includes(item.source) ? 60 : 0;
   return sourceBoost + topicHits * 24 + administrationHits * 18 + Math.min(base, 250) / 10;
 }
 

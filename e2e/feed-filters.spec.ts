@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const researchSources = ["arxiv", "hacker-news", "github", "stack-overflow", "dev", "indie-hackers", "bluesky"];
+const researchSources = ["arxiv", "hacker-news", "github", "stack-overflow", "dev", "indie-hackers", "bluesky", "openalex", "hugging-face", "microsoft-research", "google-ai", "mit-sloan", "social-media-today"];
 const policySources = ["eu-regulation", "us-regulation", "vietnam-regulation", "world-bank"];
 
 test.describe("feed URL filters", () => {
@@ -21,11 +21,21 @@ test.describe("feed URL filters", () => {
     await page.goto("/");
     await expect(page.getByTestId("feed-card").first()).toBeVisible();
 
+    const researchFeedRequest = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return url.pathname === "/api/feed" && url.searchParams.get("category") === "research-ai";
+    });
     await page.getByTestId("view-filter-research").click();
+    await researchFeedRequest;
     await expect(page).toHaveURL(/view=research/);
     await expect(page.getByTestId("feed-card")).toHaveCount(researchSources.length);
 
+    const arxivFeedRequest = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return url.pathname === "/api/feed" && url.searchParams.get("category") === "research-ai" && url.searchParams.get("sources") === "arxiv";
+    });
     await page.getByTestId("source-filter-arxiv").click();
+    await arxivFeedRequest;
     await expect(page).toHaveURL(/source=arxiv/);
     await expect(page).toHaveURL(/view=research/);
     await expect(page.getByTestId("feed-card")).toHaveCount(1);

@@ -5,6 +5,12 @@ import type { SourceId } from "@/lib/types";
 export const feedViewIds = ["focused", "research", "policy"] as const;
 export type FeedView = (typeof feedViewIds)[number];
 
+const feedViewLabels: Record<FeedView, string> = {
+  focused: "Focused",
+  research: "Research & AI",
+  policy: "Policy & economy",
+};
+
 export const researchSourceIds = [
   "arxiv",
   "hacker-news",
@@ -13,6 +19,12 @@ export const researchSourceIds = [
   "dev",
   "indie-hackers",
   "bluesky",
+  "openalex",
+  "hugging-face",
+  "microsoft-research",
+  "google-ai",
+  "mit-sloan",
+  "social-media-today",
 ] as const satisfies readonly SourceId[];
 
 export const policySourceIds = ["eu-regulation", "us-regulation", "vietnam-regulation", "world-bank"] as const satisfies readonly SourceId[];
@@ -47,6 +59,26 @@ export const defaultFeedFilters: FeedFilters = {
   query: "",
   saved: false,
 };
+
+export function slugifyFeedCategory(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+export function getFeedCategorySlug(view: FeedView): string {
+  return slugifyFeedCategory(feedViewLabels[view]);
+}
+
+export function getFeedSourceRequest(filters: Pick<FeedFilters, "source" | "view">): string {
+  if (filters.source !== "all") return filters.source;
+  if (filters.view === "research") return researchSourceIds.join(",");
+  if (filters.view === "policy") return policySourceIds.join(",");
+  return "all";
+}
 
 export function normalizeFeedFilters(filters: FeedFilters): FeedFilters {
   return {

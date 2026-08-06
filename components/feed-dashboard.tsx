@@ -4,6 +4,10 @@ import {
   ArrowDown,
   ArrowUp,
   Bookmark,
+  BookOpenCheck,
+  Bot,
+  BrainCircuit,
+  BriefcaseBusiness,
   Check,
   ChevronDown,
   ChevronRight,
@@ -18,11 +22,13 @@ import {
   Landmark,
   Leaf,
   MessageCircle,
+  Microscope,
   Plus,
   Radio,
   RefreshCw,
   Scale,
   Search,
+  Share2,
   Sparkles,
   Users,
   Building2,
@@ -32,6 +38,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   defaultFeedFilters,
+  getFeedCategorySlug,
+  getFeedSourceRequest,
   parseFeedFilters,
   policySourceIds,
   researchSourceIds,
@@ -58,6 +66,12 @@ const sourceIcons: Record<SourceId, typeof Sparkles> = {
   "us-regulation": Scale,
   "vietnam-regulation": Building2,
   "world-bank": Landmark,
+  openalex: BookOpenCheck,
+  "hugging-face": Bot,
+  "microsoft-research": Microscope,
+  "google-ai": BrainCircuit,
+  "mit-sloan": BriefcaseBusiness,
+  "social-media-today": Share2,
   mastodon: Radio,
   bluesky: Leaf,
   hashnode: Hash,
@@ -201,14 +215,18 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [upvoted, setUpvoted] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<Toast>(null);
+  const categorySlug = getFeedCategorySlug(filters.view);
+  const sourceRequest = getFeedSourceRequest(filters);
+  const isDefaultFeed = categorySlug === "focused" && filters.source === "all";
   const feedQuery = useQuery({
-    queryKey: ["feed", "all"],
+    queryKey: ["feed", { category: categorySlug, source: filters.source }],
     queryFn: async (): Promise<FeedResponse> => {
-      const response = await fetch("/api/feed?sources=all", { cache: "no-store" });
+      const params = new URLSearchParams({ category: categorySlug, sources: sourceRequest });
+      const response = await fetch(`/api/feed?${params}`, { cache: "no-store" });
       if (!response.ok) throw new Error("Feed request failed");
       return response.json() as Promise<FeedResponse>;
     },
-    initialData: initialFeed,
+    initialData: isDefaultFeed ? initialFeed : undefined,
     staleTime: 300_000,
   });
   const feed = feedQuery.data ?? initialFeed;
