@@ -24,8 +24,20 @@ const fixtureItems: FeedItem[] = [
 
 export function getE2eFeed(sources: SourceId[]): FeedResponse {
   const sourceSet = new Set(sources);
+  const items = sources.map((source) => fixtureItems.find((item) => item.source === source) ?? {
+    id: `fixture-${source}`,
+    source,
+    title: `${source.replace(/-/g, " ")} publishes an open knowledge update`,
+    summary: "Public update from a source committed to open knowledge, open education, or open-source software.",
+    author: source.replace(/-/g, " "),
+    url: `https://example.com/${source}`,
+    publishedAt: fixtureTimestamp,
+    score: 72,
+    tag: "Open knowledge",
+  });
+
   return {
-    items: fixtureItems.filter((item) => sourceSet.has(item.source)),
+    items: items.filter((item) => sourceSet.has(item.source)),
     statuses: sources.map((source) => ({ source, loaded: true })),
     fetchedAt: fixtureTimestamp,
   };

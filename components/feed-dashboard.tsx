@@ -34,6 +34,7 @@ import {
   Building2,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -73,6 +74,33 @@ const sourceIcons: Record<SourceId, typeof Sparkles> = {
   "google-ai": BrainCircuit,
   "mit-sloan": BriefcaseBusiness,
   "social-media-today": Share2,
+  wikimedia: BookOpenCheck,
+  "creative-commons": Scale,
+  "open-knowledge-foundation": Landmark,
+  openstreetmap: Landmark,
+  "internet-archive": BookOpenCheck,
+  "learning-equality": GraduationCap,
+  carpentries: GraduationCap,
+  "public-knowledge-project": BookOpenCheck,
+  "center-for-open-science": Microscope,
+  numfocus: BrainCircuit,
+  "open-source-ecology": GitFork,
+  "open-education-global": GraduationCap,
+  oapen: BookOpenCheck,
+  "open-food-facts": Leaf,
+  osgeo: Landmark,
+  apereo: GraduationCap,
+  posit: BriefcaseBusiness,
+  moodle: GraduationCap,
+  h5p: BookOpenCheck,
+  "canvas-lms": GraduationCap,
+  overleaf: BookOpenCheck,
+  pensoft: Microscope,
+  frontiers: Microscope,
+  automattic: GitFork,
+  proton: Scale,
+  plausible: BriefcaseBusiness,
+  matomo: BriefcaseBusiness,
   mastodon: Radio,
   bluesky: Leaf,
   hashnode: Hash,
@@ -326,7 +354,7 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
 
           <nav className="mt-10 space-y-1" aria-label="Primary navigation">
             <button className={`nav-item ${!filters.saved ? "nav-item-active" : ""}`} onClick={() => updateFilters({ saved: false })}><Home size={19} /> Home</button>
-            <button className="nav-item" onClick={() => notify("Explore is coming next")}><Compass size={19} /> Explore</button>
+            <Link className="nav-item" href="/terminal"><Compass size={19} /> AI Infra Terminal</Link>
             <button className={`nav-item ${filters.saved ? "nav-item-active" : ""}`} onClick={() => updateFilters({ saved: !filters.saved })}><Bookmark size={19} /> Library <span className="ml-auto font-mono text-[10px] font-medium text-[#8e9590]">{saved.size}</span></button>
           </nav>
 
@@ -360,7 +388,10 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
               <span className="relative grid h-5 w-5 place-items-center -rotate-12" aria-hidden="true"><i className="absolute h-[6px] w-[6px] -translate-x-1 translate-y-1 rounded-full bg-[#e8bd4d]" /><i className="absolute h-[6px] w-[6px] translate-x-1 translate-y-1 rounded-full bg-[#f27252]" /><i className="absolute h-[6px] w-[6px] -translate-y-1 rounded-full bg-[#263e52]" /></span>
               <span className="font-display text-xl font-bold tracking-tight">signal</span>
             </button>
-            <button className="rounded-md p-2 text-[#6c746f] hover:bg-[#f0f1ed] disabled:cursor-wait disabled:opacity-60" onClick={() => void refresh()} disabled={isRefreshing} aria-label="Refresh feed"><RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} /></button>
+            <div className="flex items-center gap-1">
+              <Link className="rounded-md px-2 py-1.5 text-[11px] font-semibold text-[#5f6d67] hover:bg-[#f0f1ed] hover:text-[#202725]" href="/terminal">Terminal</Link>
+              <button className="rounded-md p-2 text-[#6c746f] hover:bg-[#f0f1ed] disabled:cursor-wait disabled:opacity-60" onClick={() => void refresh()} disabled={isRefreshing} aria-label="Refresh feed"><RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} /></button>
+            </div>
           </header>
           <div className="flex items-start justify-between gap-4 pb-5 pt-8 sm:pb-6 sm:pt-11">
             <div>
@@ -368,9 +399,12 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
               <h1 className="mt-2 font-display text-[27px] font-semibold tracking-[-1.1px] text-[#222725] sm:text-[31px]">Worth your attention <span className="font-sans text-[20px] text-[#e7af4a]">✦</span></h1>
               <p className="mt-1.5 text-[13px] text-[#818883]">{loadedCount} live sources for research, technology, policy, and growth.</p>
             </div>
-            <button className="mt-1 hidden items-center gap-1.5 rounded-md border border-[#dedfd9] bg-[#fffefa] px-2.5 py-1.5 text-[11px] font-medium text-[#717975] shadow-sm hover:border-[#cfd2cc] disabled:cursor-wait disabled:opacity-60 sm:flex" onClick={() => void refresh()} disabled={isRefreshing}>
-              <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} /> {isRefreshing ? "Refreshing" : "Refresh"}
-            </button>
+            <div className="mt-1 hidden items-center gap-2 sm:flex">
+              <Link className="inline-flex items-center gap-1.5 rounded-md border border-[#dedfd9] bg-[#fffefa] px-2.5 py-1.5 text-[11px] font-medium text-[#596762] shadow-sm hover:border-[#cfd2cc] hover:text-[#26342e]" href="/terminal"><Compass size={14} /> AI Infra Terminal</Link>
+              <button className="inline-flex items-center gap-1.5 rounded-md border border-[#dedfd9] bg-[#fffefa] px-2.5 py-1.5 text-[11px] font-medium text-[#717975] shadow-sm hover:border-[#cfd2cc] disabled:cursor-wait disabled:opacity-60" onClick={() => void refresh()} disabled={isRefreshing}>
+                <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} /> {isRefreshing ? "Refreshing" : "Refresh"}
+              </button>
+            </div>
           </div>
 
           <div className="flex h-11 items-center justify-between border-b border-[#e6e6e0]">

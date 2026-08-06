@@ -97,8 +97,17 @@ function xmlValues(xml: string, tag: string): string[] {
   return [...xml.matchAll(new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tag}>`, "gi"))].map((match) => match[1]);
 }
 
+function xmlAttribute(value: string | undefined, attribute: string): string | undefined {
+  return value?.match(new RegExp(`\\b${attribute}=["']([^"']+)["']`, "i"))?.[1];
+}
+
+function xmlLink(xml: string): string {
+  const tag = xml.match(/<link\b[^>]*>/i)?.[0];
+  return xmlAttribute(tag, "href") || stripCdata(xmlValue(xml, "link"));
+}
+
 function parseRssItems(xml: string) {
-  return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((match, index) => {
+  const rssItems = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((match, index) => {
     const item = match[1];
     const categories = xmlValues(item, "category");
     return {
@@ -109,6 +118,23 @@ function parseRssItems(xml: string) {
       author: stripHtml(stripCdata(xmlValue(item, "dc:creator"))),
       publishedAt: stripCdata(xmlValue(item, "pubDate")) || stripCdata(xmlValue(item, "dc:date")),
       category: stripHtml(stripCdata(categories[0])),
+    };
+  });
+
+  if (rssItems.length > 0) return rssItems;
+
+  return [...xml.matchAll(/<entry(?:\s[^>]*)?>([\s\S]*?)<\/entry>/g)].map((match, index) => {
+    const entry = match[1];
+    const author = xmlValue(entry, "author");
+    const categoryTag = entry.match(/<category\b[^>]*>/i)?.[0];
+    return {
+      id: stripCdata(xmlValue(entry, "id")) || `${xmlLink(entry) || "entry"}-${index}`,
+      title: stripHtml(stripCdata(xmlValue(entry, "title"))),
+      link: xmlLink(entry),
+      description: stripHtml(stripCdata(xmlValue(entry, "summary")) || stripCdata(xmlValue(entry, "content"))),
+      author: stripHtml(stripCdata(xmlValue(author || "", "name"))),
+      publishedAt: stripCdata(xmlValue(entry, "published")) || stripCdata(xmlValue(entry, "updated")),
+      category: xmlAttribute(categoryTag, "term"),
     };
   });
 }
@@ -390,6 +416,10 @@ async function getSocialMediaToday(): Promise<FeedItem[]> {
   return rssItemsToFeedItems(await fetchRss("https://www.socialmediatoday.com/feeds/news/"), "social-media-today", "Social Media Today", "Open this social media administration update.", "Social media administration");
 }
 
+function getOrganizationFeed(source: SourceId, endpoint: string, author: string, summary: string, tag: string): Promise<FeedItem[]> {
+  return fetchRss(endpoint).then((entries) => rssItemsToFeedItems(entries, source, author, summary, tag));
+}
+
 type LiveSourceId = Exclude<SourceId, "hashnode" | "discord" | "mastodon">;
 
 const adapters: Record<LiveSourceId, () => Promise<FeedItem[]>> = {
@@ -410,6 +440,33 @@ const adapters: Record<LiveSourceId, () => Promise<FeedItem[]>> = {
   "google-ai": getGoogleAi,
   "mit-sloan": getMitSloan,
   "social-media-today": getSocialMediaToday,
+  wikimedia: () => getOrganizationFeed("wikimedia", "https://wikimediafoundation.org/feed/", "Wikimedia Foundation", "Open this free-knowledge update from the Wikimedia movement.", "Free knowledge"),
+  "creative-commons": () => getOrganizationFeed("creative-commons", "https://creativecommons.org/feed/", "Creative Commons", "Open this update on sharing, culture, or open knowledge.", "Open knowledge"),
+  "open-knowledge-foundation": () => getOrganizationFeed("open-knowledge-foundation", "https://blog.okfn.org/feed/", "Open Knowledge Foundation", "Open this public-interest data or technology update.", "Open data"),
+  openstreetmap: () => getOrganizationFeed("openstreetmap", "https://blog.openstreetmap.org/feed/", "OpenStreetMap", "Open this community mapping update.", "Open mapping"),
+  "internet-archive": () => getOrganizationFeed("internet-archive", "https://blog.archive.org/feed/", "Internet Archive", "Open this update on preserving and accessing knowledge.", "Digital library"),
+  "learning-equality": () => getOrganizationFeed("learning-equality", "https://learning-equality.medium.com/feed", "Learning Equality", "Open this offline learning and open education update.", "Open education"),
+  carpentries: () => getOrganizationFeed("carpentries", "https://carpentries.org/blog/index.xml", "The Carpentries", "Open this research computing and open lesson update.", "Open education"),
+  "public-knowledge-project": () => getOrganizationFeed("public-knowledge-project", "https://pkp.sfu.ca/feed/", "Public Knowledge Project", "Open this scholarly publishing infrastructure update.", "Open access"),
+  "center-for-open-science": () => getOrganizationFeed("center-for-open-science", "https://www.cos.io/blog/rss.xml", "Center for Open Science", "Open this reproducible research update.", "Open science"),
+  numfocus: () => getOrganizationFeed("numfocus", "https://medium.com/feed/@numfocus", "NumFOCUS", "Open this scientific computing community update.", "Scientific computing"),
+  "open-source-ecology": () => getOrganizationFeed("open-source-ecology", "https://www.opensourceecology.org/feed/", "Open Source Ecology", "Open this practical open hardware and education update.", "Open hardware"),
+  "open-education-global": () => getOrganizationFeed("open-education-global", "https://www.oeglobal.org/feed/", "Open Education Global", "Open this global open education update.", "Open education"),
+  oapen: () => getOrganizationFeed("oapen", "https://library.oapen.org/feed/rss_2.0/site", "OAPEN Library", "Open this open-access academic book update.", "Open access"),
+  "open-food-facts": () => getOrganizationFeed("open-food-facts", "https://blog.openfoodfacts.org/en/feed", "Open Food Facts", "Open this open food data update.", "Open data"),
+  osgeo: () => getOrganizationFeed("osgeo", "https://www.osgeo.org/feed/", "OSGeo", "Open this geospatial software and community update.", "Open geospatial"),
+  apereo: () => getOrganizationFeed("apereo", "https://www.apereo.org/rss.xml", "Apereo Foundation", "Open this higher education open-source update.", "Open education"),
+  posit: () => getOrganizationFeed("posit", "https://opensource.posit.co/blog/index.xml", "Posit", "Open this open-source data science update.", "Open source"),
+  moodle: () => getOrganizationFeed("moodle", "https://moodle.com/feed/", "Moodle", "Open this learning platform update.", "Open education"),
+  h5p: () => getOrganizationFeed("h5p", "https://h5p.org/rss.xml", "H5P", "Open this interactive learning content update.", "Open education"),
+  "canvas-lms": () => getOrganizationFeed("canvas-lms", "https://github.com/instructure/canvas-lms/releases.atom", "Canvas LMS", "Open this Canvas LMS release update.", "Open source"),
+  overleaf: () => getOrganizationFeed("overleaf", "https://github.com/overleaf/overleaf/releases.atom", "Overleaf", "Open this collaborative writing release update.", "Open source"),
+  pensoft: () => getOrganizationFeed("pensoft", "https://blog.pensoft.net/feed/", "Pensoft", "Open this open-science publishing update.", "Open access"),
+  frontiers: () => getOrganizationFeed("frontiers", "https://www.frontiersin.org/news/rss", "Frontiers", "Open this open-access research update.", "Open access"),
+  automattic: () => getOrganizationFeed("automattic", "https://automattic.com/feed/", "Automattic", "Open this open-source publishing and web update.", "Open source"),
+  proton: () => getOrganizationFeed("proton", "https://proton.me/blog/feed", "Proton", "Open this privacy and open-source technology update.", "Privacy technology"),
+  plausible: () => getOrganizationFeed("plausible", "https://plausible.io/blog/feed.xml", "Plausible", "Open this privacy-friendly analytics update.", "Open source"),
+  matomo: () => getOrganizationFeed("matomo", "https://matomo.org/feed/", "Matomo", "Open this data ownership and open-source analytics update.", "Open source"),
 };
 
 function parseRequestedSources(requested: string | null): LiveSourceId[] {
