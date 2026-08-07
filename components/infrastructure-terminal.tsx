@@ -138,7 +138,7 @@ function SourceState({ status, score }: { status: TerminalSourceStatus; score?: 
     >
       <span className={status.loaded ? "terminal-status-dot terminal-status-dot-live" : "terminal-status-dot terminal-status-dot-error"} aria-hidden="true" />
       <span className="min-w-0 truncate">{status.name}</span>
-      {score !== undefined && score > 0 && <span className="font-mono text-[10px] text-[#64dca8]">{score.toFixed(1)}</span>}
+      {score !== undefined && <span className="font-mono text-[10px] text-[#64dca8]">{score.toFixed(1)}</span>}
       <span className="font-mono text-[10px] text-[#7d8b9c]">{status.loaded ? status.itemCount : "ERR"}</span>
     </a>
   );
@@ -467,7 +467,7 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
                   const score = sourceScores.get(source.sourceId) ?? 0;
                   return (
                   <div key={source.sourceId}>
-                    <span className="flex items-center justify-between gap-3 text-[11px] text-[#b5c4d1]"><span className="flex min-w-0 items-center gap-1.5 truncate"><span className={source.loaded ? "terminal-status-dot terminal-status-dot-live" : "terminal-status-dot terminal-status-dot-error"} />{source.name}</span><span className="flex items-center gap-1.5 font-mono text-[#dce8f1]">{score > 0 && <span className="text-[#64dca8]">{score.toFixed(1)}</span>}<span>{source.count}</span></span></span>
+                    <span className="flex items-center justify-between gap-3 text-[11px] text-[#b5c4d1]"><span className="flex min-w-0 items-center gap-1.5 truncate"><span className={source.loaded ? "terminal-status-dot terminal-status-dot-live" : "terminal-status-dot terminal-status-dot-error"} />{source.name}</span><span className="flex items-center gap-1.5 font-mono text-[#dce8f1]"><span className="text-[#64dca8]">{score.toFixed(1)}</span><span>{source.count}</span></span></span>
                     <span className="mt-1.5 block h-1.5 overflow-hidden bg-[#172b3b]"><span className={source.loaded ? "block h-full bg-[#73aefa] transition-[width] duration-300" : "block h-full bg-[#ff9079] transition-[width] duration-300"} style={{ width: `${(source.count / maxSourceCount) * 100}%` }} /></span>
                   </div>
                   );
@@ -521,7 +521,7 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
                               </span>
                             )}
                           </div>
-                          <p className="mt-0.5 font-mono text-[10px] leading-4 text-[#788b9e]">{source.loaded ? `${source.message ?? `${source.itemCount} LIVE RECORD${source.itemCount === 1 ? "" : "S"}`}${score > 0 ? ` · ${score.toFixed(1)} avg score` : ""}` : source.message ?? "UNAVAILABLE"}</p>
+                          <p className="mt-0.5 font-mono text-[10px] leading-4 text-[#788b9e]">{source.loaded ? `${source.message ?? `${source.itemCount} LIVE RECORD${source.itemCount === 1 ? "" : "S"}`} · ${score.toFixed(1)} avg score` : source.message ?? "UNAVAILABLE"}</p>
                         </div>
                       </div>
                     </div>

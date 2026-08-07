@@ -9,7 +9,6 @@ type CategoryScoresProps = {
 
 export function CategoryScores({ scores, testId, activeColor, mutedColor }: CategoryScoresProps) {
   const peak = maxScore(scores);
-  if (peak === 0) return null;
   return (
     <div className="flex flex-wrap items-center gap-1.5" data-testid={testId}>
       {SHARED_CATEGORIES.map((category) => {

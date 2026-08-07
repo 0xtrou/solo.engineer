@@ -392,7 +392,7 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
               return (
                 <button key={source} className={`source-item ${filters.source === source ? "source-item-active" : ""}`} onClick={() => setSource(source)} data-testid={`source-filter-${source}`}>
                   <span style={{ color: sourceMeta[source].accent }}><SourceMark source={source} size={16} /></span>{sourceMeta[source].label}
-                  {score > 0 && <span className="text-[#d76346]">{score.toFixed(1)}</span>}
+                  <span className="text-[#d76346]">{score.toFixed(1)}</span>
                 </button>
               );
             })}
@@ -405,7 +405,7 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
               return (
                 <button key={source} className={`source-item ${filters.source === source ? "source-item-active" : ""}`} onClick={() => setSource(source)} data-testid={`source-filter-${source}`}>
                   <span style={{ color: sourceMeta[source].accent }}><SourceMark source={source} size={16} /></span>{sourceMeta[source].label}
-                  {score > 0 && <span className="text-[#d76346]">{score.toFixed(1)}</span>}
+                  <span className="text-[#d76346]">{score.toFixed(1)}</span>
                 </button>
               );
             })}
@@ -487,7 +487,7 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
           <section className="mt-7 border-t border-[#e4e6e1] pt-5">
             <div className="flex items-center justify-between"><h2 className="font-display text-[15px] text-[#2c322f]">Live sources</h2><button className="text-[10px] font-semibold text-[#dc694b]" onClick={() => void refresh()}>Refresh all</button></div>
             <div className="mt-3 space-y-1.5">
-              {feed?.statuses.slice().sort((a, b) => tierIndexOf(a.source) - tierIndexOf(b.source)).map((status) => { const score = sourceAvgScore.get(status.source) ?? 0; return (<div key={status.source} className="flex items-center gap-2 rounded px-1 py-1 text-[11px] text-[#59615c]"><span className={`h-1.5 w-1.5 rounded-full ${status.loaded ? "bg-[#67aa72]" : "bg-[#d99157]"}`} /><span className="flex-1">{sourceMeta[status.source].label}</span>{score > 0 && <span className="font-mono text-[9px] text-[#d76346]">{score.toFixed(1)}</span>}<span className="font-mono text-[9px] text-[#a1a7a2]">{status.loaded ? "LIVE" : "WAIT"}</span></div>); })}
+              {feed?.statuses.slice().sort((a, b) => tierIndexOf(a.source) - tierIndexOf(b.source)).map((status) => { const score = sourceAvgScore.get(status.source) ?? 0; return (<div key={status.source} className="flex items-center gap-2 rounded px-1 py-1 text-[11px] text-[#59615c]"><span className={`h-1.5 w-1.5 rounded-full ${status.loaded ? "bg-[#67aa72]" : "bg-[#d99157]"}`} /><span className="flex-1">{sourceMeta[status.source].label}</span><span className="font-mono text-[9px] text-[#d76346]">{score.toFixed(1)}</span><span className="font-mono text-[9px] text-[#a1a7a2]">{status.loaded ? "LIVE" : "WAIT"}</span></div>); })}
             </div>
           </section>
 
