@@ -455,7 +455,6 @@ const adapters: Record<LiveSourceId, () => Promise<FeedItem[]>> = {
   "open-education-global": () => getOrganizationFeed("open-education-global", "https://www.oeglobal.org/feed/", "Open Education Global", "Open this global open education update.", "Open education"),
   oapen: () => getOrganizationFeed("oapen", "https://library.oapen.org/feed/rss_2.0/site", "OAPEN Library", "Open this open-access academic book update.", "Open access"),
   "open-food-facts": () => getOrganizationFeed("open-food-facts", "https://blog.openfoodfacts.org/en/feed", "Open Food Facts", "Open this open food data update.", "Open data"),
-  osgeo: () => getOrganizationFeed("osgeo", "https://www.osgeo.org/feed/", "OSGeo", "Open this geospatial software and community update.", "Open geospatial"),
   apereo: () => getOrganizationFeed("apereo", "https://www.apereo.org/rss.xml", "Apereo Foundation", "Open this higher education open-source update.", "Open education"),
   posit: () => getOrganizationFeed("posit", "https://opensource.posit.co/blog/index.xml", "Posit", "Open this open-source data science update.", "Open source"),
   moodle: () => getOrganizationFeed("moodle", "https://moodle.com/feed/", "Moodle", "Open this learning platform update.", "Open education"),
@@ -527,7 +526,7 @@ export async function getFeed(requestedSources: string | null): Promise<FeedResp
   ).flatMap((sourceItems) => filterAndRank(sourceItems).slice(0, PER_SOURCE_LIMIT));
 
   return {
-    items: filterAndRank(balancedItems).slice(0, 120),
+    items: filterAndRank(balancedItems).slice(0, 240),
     statuses: snapshot.statuses,
     fetchedAt: snapshot.fetchedAt,
   };

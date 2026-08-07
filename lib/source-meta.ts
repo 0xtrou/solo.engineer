@@ -41,7 +41,6 @@ export const sourceMeta: Record<SourceId, SourceMeta> = {
   "open-education-global": { id: "open-education-global", label: "Open Education Global", accent: "#e06b35", description: "Open education policy and practice", tier: "T3" },
   oapen: { id: "oapen", label: "OAPEN", accent: "#855aa4", description: "Open-access academic books", tier: "T3" },
   "open-food-facts": { id: "open-food-facts", label: "Open Food Facts", accent: "#4c9c63", description: "Open food data and public knowledge", tier: "T3" },
-  osgeo: { id: "osgeo", label: "OSGeo", accent: "#406e8e", description: "Open-source geospatial software and education", tier: "T3" },
   apereo: { id: "apereo", label: "Apereo", accent: "#8a6633", description: "Open-source higher education software", tier: "T3" },
   posit: { id: "posit", label: "Posit Open Source", accent: "#417ca8", description: "Open data science and technical publishing", tier: "T2" },
   moodle: { id: "moodle", label: "Moodle", accent: "#f98012", description: "Open-source learning platform", tier: "T2" },

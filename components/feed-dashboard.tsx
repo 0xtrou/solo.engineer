@@ -89,7 +89,6 @@ const sourceIcons: Record<SourceId, typeof Sparkles> = {
   "open-education-global": GraduationCap,
   oapen: BookOpenCheck,
   "open-food-facts": Leaf,
-  osgeo: Landmark,
   apereo: GraduationCap,
   posit: BriefcaseBusiness,
   moodle: GraduationCap,

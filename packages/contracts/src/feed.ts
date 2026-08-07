@@ -31,7 +31,6 @@ export const feedSourceIds = [
   "open-education-global",
   "oapen",
   "open-food-facts",
-  "osgeo",
   "apereo",
   "posit",
   "moodle",

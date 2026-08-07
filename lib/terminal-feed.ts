@@ -459,6 +459,7 @@ function toArticles(source: SourceDefinition, entries: RssEntry[], limit = 5): T
     if (seen.has(identity)) return [];
     seen.add(identity);
     const { category, scores } = categorizeArticle(entry.title, entry.summary, source.category);
+    if (maxScore(scores) === 0) return [];
     return [{
       id: `${source.sourceId}:${entry.url}`,
       region: source.region,

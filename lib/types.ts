@@ -31,7 +31,6 @@ export const SOURCE_IDS = [
   "open-education-global",
   "oapen",
   "open-food-facts",
-  "osgeo",
   "apereo",
   "posit",
   "moodle",
