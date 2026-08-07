@@ -2,7 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { CategoryScores } from "@/components/category-scores";
-import { maxScore } from "@/lib/categories";
+import { citationInDegree, computeSourceQuality } from "@/lib/source-quality";
+import { terminalSourceDomains } from "@/lib/source-domains";
 import {
   Activity,
   ArrowUpRight,
@@ -126,7 +127,7 @@ function getCategoryIcon(category: TerminalCategory) {
   return Activity;
 }
 
-function SourceState({ status, score }: { status: TerminalSourceStatus; score?: number }) {
+function SourceState({ status, composite }: { status: TerminalSourceStatus; composite?: number }) {
   return (
     <a
       className="terminal-source-state"
@@ -134,11 +135,11 @@ function SourceState({ status, score }: { status: TerminalSourceStatus; score?: 
       href={status.homepage}
       target="_blank"
       rel="noreferrer"
-      title={status.loaded ? `Open ${status.name}` : `${status.name}: ${status.message ?? "unavailable"}`}
+      title={status.loaded ? `Open ${status.name} · Q${composite ?? 0}` : `${status.name}: ${status.message ?? "unavailable"}`}
     >
       <span className={status.loaded ? "terminal-status-dot terminal-status-dot-live" : "terminal-status-dot terminal-status-dot-error"} aria-hidden="true" />
       <span className="min-w-0 truncate">{status.name}</span>
-      {score !== undefined && <span className="font-mono text-[10px] text-[#64dca8]">{score.toFixed(1)}</span>}
+      {composite !== undefined && <span className="font-mono text-[10px] text-[#64dca8]">{composite}</span>}
       <span className="font-mono text-[10px] text-[#7d8b9c]">{status.loaded ? status.itemCount : "ERR"}</span>
     </a>
   );
@@ -256,28 +257,24 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
     const needle = searchQuery.trim().toLowerCase();
     return byCategory.filter((item) => `${item.title} ${item.summary ?? ""} ${item.sourceName}`.toLowerCase().includes(needle));
   }, [regionalItems, selectedCategory, searchQuery]);
-  const sourceScores = useMemo(() => {
-    const totals = new Map<string, number>();
-    const counts = new Map<string, number>();
-    for (const item of regionalItems) {
-      const peak = maxScore(item.categoryScores);
-      totals.set(item.sourceId, (totals.get(item.sourceId) ?? 0) + peak);
-      counts.set(item.sourceId, (counts.get(item.sourceId) ?? 0) + 1);
-    }
-    const avg = new Map<string, number>();
-    for (const [sourceId, total] of totals) avg.set(sourceId, counts.has(sourceId) ? total / (counts.get(sourceId) ?? 1) : 0);
-    return avg;
-  }, [regionalItems]);
+  const sourceQuality = useMemo(() => {
+    const citations = citationInDegree(regionalItems, terminalSourceDomains, (i) => i.sourceId);
+    return computeSourceQuality(regionalItems, {
+      sourceKey: (i) => i.sourceId,
+      tierFor: (sourceId) => regionalStatuses.find((s) => s.sourceId === sourceId)?.tier,
+      citationMap: citations,
+    });
+  }, [regionalItems, regionalStatuses]);
   const sources = useMemo(() =>
     uniqueBy(regionalStatuses, (status) => status.sourceId)
       .map((source, index) => ({ source, index }))
       .sort((left, right) => {
-        const scoreDiff = (sourceScores.get(right.source.sourceId) ?? 0) - (sourceScores.get(left.source.sourceId) ?? 0);
-        if (scoreDiff !== 0) return scoreDiff;
+        const compositeDiff = (sourceQuality.get(right.source.sourceId)?.composite ?? 0) - (sourceQuality.get(left.source.sourceId)?.composite ?? 0);
+        if (compositeDiff !== 0) return compositeDiff;
         return terminalTierRankForStatus(left.source) - terminalTierRankForStatus(right.source) || left.index - right.index;
       })
       .map((entry) => entry.source),
-  [regionalStatuses, sourceScores]);
+  [regionalStatuses, sourceQuality]);
   const liveSourceCount = sources.filter((source) => source.loaded).length;
   const hasVisibleData = visibleItems.length > 0;
   const categoryCounts = useMemo(() => new Map(categoryOrder.map((category) => [category, regionalItems.filter((item) => item.category === category).length])), [regionalItems]);
@@ -289,13 +286,13 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
       ...source,
       count: byCount.get(source.sourceId) ?? 0,
     })).sort((left, right) => {
-      const scoreDiff = (sourceScores.get(right.sourceId) ?? 0) - (sourceScores.get(left.sourceId) ?? 0);
-      if (scoreDiff !== 0) return scoreDiff;
+      const compositeDiff = (sourceQuality.get(right.sourceId)?.composite ?? 0) - (sourceQuality.get(left.sourceId)?.composite ?? 0);
+      if (compositeDiff !== 0) return compositeDiff;
       return terminalTierRankForStatus(left) - terminalTierRankForStatus(right)
         || right.count - left.count
         || left.name.localeCompare(right.name);
     });
-  }, [sources, visibleItems, sourceScores]);
+  }, [sources, visibleItems, sourceQuality]);
   const maxSourceCount = Math.max(...sourceCapture.map((source) => source.count), 1);
   const activityPoints = useMemo<ActivityPoint[]>(() => {
     const timestamps = visibleItems.flatMap((item) => item.publishedAt ? [Date.parse(item.publishedAt)] : []).filter((value) => Number.isFinite(value));
@@ -398,7 +395,7 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
           <div className="mt-7 border-t border-[#203040] pt-6">
             <p className="terminal-label">INGESTION</p>
             <div className="mt-2 space-y-1.5">
-              {sources.map((source) => <SourceState key={source.sourceId} status={source} score={sourceScores.get(source.sourceId)} />)}
+              {sources.map((source) => <SourceState key={source.sourceId} status={source} composite={sourceQuality.get(source.sourceId)?.composite} />)}
             </div>
           </div>
 
@@ -472,10 +469,11 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
               <p className="mt-1 text-[12px] text-[#9fb0c2]">Records from live regional adapters.</p>
               <div className="mt-4 space-y-3">
                 {sourceCapture.length ? sourceCapture.map((source) => {
-                  const score = sourceScores.get(source.sourceId) ?? 0;
+                  const q = sourceQuality.get(source.sourceId);
+                  const composite = q?.composite ?? 0;
                   return (
-                  <div key={source.sourceId}>
-                    <span className="flex items-center justify-between gap-3 text-[11px] text-[#b5c4d1]"><span className="flex min-w-0 items-center gap-1.5 truncate"><span className={source.loaded ? "terminal-status-dot terminal-status-dot-live" : "terminal-status-dot terminal-status-dot-error"} />{source.name}</span><span className="flex items-center gap-1.5 font-mono text-[#dce8f1]"><span className="text-[#64dca8]">{score.toFixed(1)}</span><span>{source.count}</span></span></span>
+                  <div key={source.sourceId} title={q ? `Q${composite} · ${Math.round(q.yieldPct)}% yield · ${q.citations} cites` : source.name}>
+                    <span className="flex items-center justify-between gap-3 text-[11px] text-[#b5c4d1]"><span className="flex min-w-0 items-center gap-1.5 truncate"><span className={source.loaded ? "terminal-status-dot terminal-status-dot-live" : "terminal-status-dot terminal-status-dot-error"} />{source.name}</span><span className="flex items-center gap-1.5 font-mono text-[#dce8f1]"><span className="text-[#64dca8]">{composite}</span><span>{source.count}</span></span></span>
                     <span className="mt-1.5 block h-1.5 overflow-hidden bg-[#172b3b]"><span className={source.loaded ? "block h-full bg-[#73aefa] transition-[width] duration-300" : "block h-full bg-[#ff9079] transition-[width] duration-300"} style={{ width: `${(source.count / maxSourceCount) * 100}%` }} /></span>
                   </div>
                   );
@@ -511,9 +509,10 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
                 <p className="terminal-label">SOURCE HEALTH</p>
                 <div className="mt-4 space-y-3">
                   {sources.map((source) => {
-                    const score = sourceScores.get(source.sourceId) ?? 0;
+                    const q = sourceQuality.get(source.sourceId);
+                    const composite = q?.composite ?? 0;
                     return (
-                    <div key={source.sourceId} className="border-b border-[#1e3040] pb-3 last:border-b-0 last:pb-0">
+                    <div key={source.sourceId} className="border-b border-[#1e3040] pb-3 last:border-b-0 last:pb-0" title={q ? `Q${composite} · ${Math.round(q.yieldPct)}% yield · ${q.citations} cites · ${q.scored}/${q.total} scored` : source.name}>
                       <div className="flex items-start gap-2">
                         {source.loaded ? <Check className="mt-0.5 shrink-0 text-[#60d7a5]" size={14} /> : <CircleAlert className="mt-0.5 shrink-0 text-[#ff9179]" size={14} />}
                         <div className="min-w-0">
@@ -529,7 +528,7 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
                               </span>
                             )}
                           </div>
-                          <p className="mt-0.5 font-mono text-[10px] leading-4 text-[#788b9e]">{source.loaded ? `${source.message ?? `${source.itemCount} LIVE RECORD${source.itemCount === 1 ? "" : "S"}`} · ${score.toFixed(1)} avg score` : source.message ?? "UNAVAILABLE"}</p>
+                          <p className="mt-0.5 font-mono text-[10px] leading-4 text-[#788b9e]">{source.loaded ? `${source.message ?? `${source.itemCount} LIVE RECORD${source.itemCount === 1 ? "" : "S"}`} · Q${composite} · ${q ? Math.round(q.yieldPct) : 0}% yield` : source.message ?? "UNAVAILABLE"}</p>
                         </div>
                       </div>
                     </div>

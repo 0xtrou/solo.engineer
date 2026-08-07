@@ -39,7 +39,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchFeed } from "@/lib/client/feed-api";
 import { CategoryScores } from "@/components/category-scores";
-import { maxScore } from "@/lib/categories";
+import { citationInDegree, computeSourceQuality } from "@/lib/source-quality";
+import { homeSourceDomains } from "@/lib/source-domains";
 import {
   defaultFeedFilters,
   parseFeedFilters,
@@ -159,16 +160,19 @@ function SourcePill({ source }: { source: SourceId }) {
   );
 }
 
-function SourceButton({ source, active, score, onClick }: { source: SourceId; active: boolean; score: number; onClick: () => void }) {
+function SourceButton({ source, active, quality, onClick }: { source: SourceId; active: boolean; quality?: { composite: number; yieldPct: number; citations: number; total: number }; onClick: () => void }) {
+  const composite = quality?.composite ?? 0;
+  const tooltip = quality ? `Q${composite} · ${Math.round(quality.yieldPct)}% yield · ${quality.citations} cites · ${quality.total} items` : source;
   return (
     <button
       className={`source-item ${active ? "source-item-active" : ""}`}
       onClick={onClick}
       data-testid={`source-filter-${source}`}
+      title={tooltip}
     >
       <span style={{ color: sourceMeta[source].accent }}><SourceMark source={source} size={16} /></span>
       {sourceMeta[source].label}
-      <span className="text-[#d76346]">{score.toFixed(1)}</span>
+      <span className="text-[#d76346]">{composite}</span>
     </button>
   );
 }
@@ -335,29 +339,26 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
     return items;
   }, [feed, filters, saved]);
 
-  const sourceAvgScore = useMemo(() => {
-    const totals = new Map<string, number>();
-    const counts = new Map<string, number>();
-    for (const item of feed?.items ?? []) {
-      const peak = maxScore(item.categoryScores);
-      totals.set(item.source, (totals.get(item.source) ?? 0) + peak);
-      counts.set(item.source, (counts.get(item.source) ?? 0) + 1);
-    }
-    const avg = new Map<string, number>();
-    for (const [source, total] of totals) avg.set(source, counts.has(source) ? total / (counts.get(source) ?? 1) : 0);
-    return avg;
+  const sourceQuality = useMemo(() => {
+    const items = feed?.items ?? [];
+    const citations = citationInDegree(items, homeSourceDomains, (i) => i.source);
+    return computeSourceQuality(items, {
+      sourceKey: (i) => i.source,
+      tierFor: (sourceId) => sourceMeta[sourceId as SourceId]?.tier,
+      citationMap: citations,
+    });
   }, [feed]);
   const tierIndexOf = useCallback((source: SourceId) => {
     const tier = sourceMeta[source]?.tier;
     return tier === "T1" ? 0 : tier === "T2" ? 1 : 2;
   }, []);
-  const byScoreThenTier = useCallback((a: SourceId, b: SourceId) => {
-    const scoreDiff = (sourceAvgScore.get(b) ?? 0) - (sourceAvgScore.get(a) ?? 0);
-    if (scoreDiff !== 0) return scoreDiff;
+  const byCompositeThenTier = useCallback((a: SourceId, b: SourceId) => {
+    const compositeDiff = (sourceQuality.get(b)?.composite ?? 0) - (sourceQuality.get(a)?.composite ?? 0);
+    if (compositeDiff !== 0) return compositeDiff;
     return tierIndexOf(a) - tierIndexOf(b);
-  }, [sourceAvgScore, tierIndexOf]);
-  const sortedResearchSources = useMemo(() => [...researchSourceIds].sort(byScoreThenTier), [byScoreThenTier]);
-  const sortedPolicySources = useMemo(() => [...policySourceIds].sort(byScoreThenTier), [byScoreThenTier]);
+  }, [sourceQuality, tierIndexOf]);
+  const sortedResearchSources = useMemo(() => [...researchSourceIds].sort(byCompositeThenTier), [byCompositeThenTier]);
+  const sortedPolicySources = useMemo(() => [...policySourceIds].sort(byCompositeThenTier), [byCompositeThenTier]);
 
   const loadedCount = feed?.statuses.filter((status) => status.loaded).length ?? 0;
   const unavailableStatuses = feed?.statuses.filter((status) => !status.loaded) ?? [];
@@ -402,14 +403,14 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
           <nav className="mt-2 space-y-1" aria-label="Research sources">
             <button className={`source-item ${filters.source === "all" ? "source-item-active" : ""}`} onClick={() => setSource("all")} data-testid="source-filter-all"><Sparkles size={16} /> All sources <span>{feed?.items.length ?? 0}</span></button>
             {sortedResearchSources.map((source) => (
-              <SourceButton key={source} source={source} active={filters.source === source} score={sourceAvgScore.get(source) ?? 0} onClick={() => setSource(source)} />
+              <SourceButton key={source} source={source} active={filters.source === source} quality={sourceQuality.get(source)} onClick={() => setSource(source)} />
             ))}
           </nav>
           <button className="mt-3 flex items-center gap-2 px-2.5 text-[12px] font-semibold text-[#7c847f] hover:text-[#27302b]" onClick={() => notify("Discord and Hashnode need optional local adapters; see .env.example")}><Plus size={16} /> Add local source</button>
           <div className="mt-4 px-2.5 font-mono text-[10px] tracking-[.8px] text-[#989f9a]">POLICY & ECONOMY</div>
           <nav className="mt-2 space-y-1" aria-label="Policy and economy sources">
             {sortedPolicySources.map((source) => (
-              <SourceButton key={source} source={source} active={filters.source === source} score={sourceAvgScore.get(source) ?? 0} onClick={() => setSource(source)} />
+              <SourceButton key={source} source={source} active={filters.source === source} quality={sourceQuality.get(source)} onClick={() => setSource(source)} />
             ))}
           </nav>
           <p className="mt-auto px-2.5 text-[10px] leading-5 text-[#9ba19c]">Professional personal reader<br />No account or tracking.</p>
@@ -451,7 +452,7 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
 
           <nav className="tab-scroll -mx-5 flex gap-2 overflow-x-auto border-b border-[#e6e6e0] px-5 py-3 lg:hidden" aria-label="Filter feed by source">
             <button className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${filters.source === "all" ? "border-[#263e52] bg-[#263e52] text-white" : "border-[#dde0da] bg-white text-[#59615c]"}`} onClick={() => setSource("all")}>All</button>
-            {[...mobileSourceIds].sort(byScoreThenTier).map((source) => (
+            {[...mobileSourceIds].sort(byCompositeThenTier).map((source) => (
               <button key={source} className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${filters.source === source ? "border-[#d76346] bg-[#fff2ed] text-[#a94833]" : "border-[#dde0da] bg-white text-[#59615c]"}`} onClick={() => setSource(source)}>
                 <span style={{ color: sourceMeta[source].accent }}><SourceMark source={source} size={13} /></span>
                 {sourceMeta[source].label}
@@ -489,7 +490,7 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
           <section className="mt-7 border-t border-[#e4e6e1] pt-5">
             <div className="flex items-center justify-between"><h2 className="font-display text-[15px] text-[#2c322f]">Live sources</h2><button className="text-[10px] font-semibold text-[#dc694b]" onClick={() => void refresh()}>Refresh all</button></div>
             <div className="mt-3 space-y-1.5">
-              {feed?.statuses.slice().sort((a, b) => byScoreThenTier(a.source, b.source)).map((status) => { const score = sourceAvgScore.get(status.source) ?? 0; return (<div key={status.source} className="flex items-center gap-2 rounded px-1 py-1 text-[11px] text-[#59615c]"><span className={`h-1.5 w-1.5 rounded-full ${status.loaded ? "bg-[#67aa72]" : "bg-[#d99157]"}`} /><span className="flex-1">{sourceMeta[status.source].label}</span><span className="font-mono text-[9px] text-[#d76346]">{score.toFixed(1)}</span><span className="font-mono text-[9px] text-[#a1a7a2]">{status.loaded ? "LIVE" : "WAIT"}</span></div>); })}
+              {feed?.statuses.slice().sort((a, b) => byCompositeThenTier(a.source, b.source)).map((status) => { const q = sourceQuality.get(status.source); const composite = q?.composite ?? 0; return (<div key={status.source} className="flex items-center gap-2 rounded px-1 py-1 text-[11px] text-[#59615c]"><span className={`h-1.5 w-1.5 rounded-full ${status.loaded ? "bg-[#67aa72]" : "bg-[#d99157]"}`} /><span className="flex-1">{sourceMeta[status.source].label}</span><span className="font-mono text-[9px] text-[#d76346]">{composite}</span><span className="font-mono text-[9px] text-[#a1a7a2]">{status.loaded ? "LIVE" : "WAIT"}</span></div>); })}
             </div>
           </section>
 

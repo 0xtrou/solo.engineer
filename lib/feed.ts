@@ -1,3 +1,4 @@
+import { categorizeArticleKeyword } from "@/lib/categories";
 import { filterAndRank } from "@/lib/topics";
 import { getE2eFeed } from "@/lib/feed-fixtures";
 import { sourceMeta } from "@/lib/source-meta";
@@ -508,7 +509,10 @@ export async function getFeedSnapshot(requestedSources: string | null): Promise<
     }
     statuses.push({ source, loaded: false, message: result.reason instanceof Error ? result.reason.message : "Unavailable" });
     return [];
-  }).map((item) => ({ ...item, tier: sourceMeta[item.source]?.tier }));
+  }).map((item) => {
+    const { scores } = categorizeArticleKeyword(item.title, item.summary, "Technology & research");
+    return { ...item, tier: sourceMeta[item.source]?.tier, categoryScores: scores };
+  });
 
   return { items, statuses, fetchedAt: new Date().toISOString() };
 }

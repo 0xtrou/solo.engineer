@@ -30,6 +30,7 @@ export type TerminalSourceStatus = {
   endpoint: string;
   loaded: boolean;
   itemCount: number;
+  rawItemCount?: number;
   message?: string;
   tier?: TerminalSourceTier;
 };
@@ -447,14 +448,15 @@ async function getEvnEntries(): Promise<RssEntry[]> {
   return resolved;
 }
 
-function toArticles(source: SourceDefinition, entries: RssEntry[], limit = 5): TerminalArticle[] {
+function toArticles(source: SourceDefinition, entries: RssEntry[], limit = 5): { items: TerminalArticle[]; rawCount: number } {
   const seen = new Set<string>();
   const terms = relevanceTerms[source.sourceId];
-  return entries.filter((entry) => {
+  const relevant = entries.filter((entry) => {
     if (!terms) return true;
     const text = `${entry.title}${titleOnlyRelevanceSources.has(source.sourceId) ? "" : ` ${entry.summary ?? ""}`}`.toLowerCase();
     return terms.some((term) => text.includes(term.toLowerCase()));
-  }).flatMap((entry) => {
+  });
+  const items = relevant.flatMap((entry) => {
     const identity = `${entry.title}:${entry.url}`;
     if (seen.has(identity)) return [];
     seen.add(identity);
@@ -475,6 +477,7 @@ function toArticles(source: SourceDefinition, entries: RssEntry[], limit = 5): T
       tier: source.tier,
     }];
   }).slice(0, limit);
+  return { items, rawCount: relevant.length };
 }
 
 async function getFederalRegisterEntries(): Promise<RssEntry[]> {
@@ -542,13 +545,14 @@ async function settleWithConcurrency<T>(tasks: Array<() => Promise<T>>, concurre
 export async function getTerminalFeed(): Promise<TerminalFeedResponse> {
   const results = await settleWithConcurrency(adapters.map(({ source, load }) => async () => {
     try {
-      const items = toArticles(source, await load(), 6);
+      const { items, rawCount } = toArticles(source, await load(), 6);
       return {
         items,
         status: {
           ...source,
           loaded: true,
           itemCount: items.length,
+          rawItemCount: rawCount,
           message: items.length === 0 ? "No current infrastructure-matched records" : undefined,
         } satisfies TerminalSourceStatus,
       };
