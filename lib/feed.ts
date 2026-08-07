@@ -34,28 +34,57 @@ type OpenAlexWork = {
 
 const vietnamTopicTerms = [
   "administrative",
+  "banking",
   "business",
   "commerce",
   "competition",
   "cyber",
+  "customs",
   "data",
   "digital",
   "economy",
   "electronic",
+  "energy",
   "enterprise",
   "finance",
   "government",
   "information technology",
+  "innovation",
   "insurance",
+  "intellectual property",
   "investment",
   "labor",
+  "land",
   "public administration",
+  "public security",
   "science",
+  "securities",
   "social insurance",
+  "startup",
   "tax",
   "technology",
   "telecommunications",
   "trade",
+  "chuyển đổi số",
+  "công nghệ",
+  "công nghệ thông tin",
+  "đầu tư",
+  "doanh nghiệp",
+  "doanh nghiệp công nghệ",
+  "điện tử",
+  "hạ tầng",
+  "khoa học",
+  "kinh doanh",
+  "lao động",
+  "ngân hàng",
+  "niêm yết",
+  "thuế",
+  "thương mại",
+  "viễn thông",
+  "vốn",
+  "an ninh mạng",
+  "bán dẫn",
+  "trung tâm dữ liệu",
 ];
 
 function stripHtml(input: string | undefined): string {
@@ -308,7 +337,7 @@ async function getUsRegulation(): Promise<FeedItem[]> {
 }
 
 async function getVietnamRegulation(): Promise<FeedItem[]> {
-  const result = await fetchJson<{ docs?: VietnamDocument[] }>("https://vietnamlaw.gov.vn/api/vanbanmoi/public?limit=30");
+  const result = await fetchJson<{ docs?: VietnamDocument[] }>("https://vietnamlaw.gov.vn/api/vanbanmoi/public?limit=80");
   return (result.docs ?? [])
     .filter((document) => {
       const text = `${document.tenvb ?? ""} ${document.tomtat ?? ""} ${document.linhvuc_id?.[0]?.tenlinhvuc_en ?? ""}`.toLowerCase();
@@ -320,7 +349,7 @@ async function getVietnamRegulation(): Promise<FeedItem[]> {
       title: document.tenvb || document.mavb || "Vietnamese legal document",
       summary: shorten(document.tomtat || "Open this official document from Vietnam’s National Law Portal."),
       author: document.coquanbanhanh_id?.[0]?.tencoquan_en || "Vietnam National Law Portal",
-      url: `https://vietnamlaw.gov.vn/en/legal-documents/${document._id}`,
+      url: `https://vietnamlaw.gov.vn/legal-documents/${document._id}?tab=1`,
       publishedAt: document.ngaycapnhat || document.ngaybanhanh || new Date().toISOString(),
       tag: document.linhvuc_id?.[0]?.tenlinhvuc_en || "Vietnam regulation",
     }));
@@ -518,7 +547,7 @@ export async function getFeedSnapshot(requestedSources: string | null): Promise<
 }
 
 const FEED_LIMIT = 240;
-const GUARANTEED_PER_SOURCE = 2;
+const GUARANTEED_PER_SOURCE = 3;
 
 export async function getFeed(requestedSources: string | null): Promise<FeedResponse> {
   const snapshot = await getFeedSnapshot(requestedSources);
