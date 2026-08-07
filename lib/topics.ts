@@ -120,10 +120,10 @@ export function filterAndRank(items: FeedItem[]): FeedItem[] {
     .filter(isRelevant)
     .map((item) => (item.categoryScores ? item : { ...item, categoryScores: scoreCategories(searchableText(item)) }))
     .sort((left, right) => {
+      const latest = Date.parse(right.publishedAt) - Date.parse(left.publishedAt);
+      if (latest !== 0) return latest;
       const score = maxScore(right.categoryScores ?? {}) - maxScore(left.categoryScores ?? {});
       if (score !== 0) return score;
-      const tier = sourceTierRank(left.tier) - sourceTierRank(right.tier);
-      if (tier !== 0) return tier;
-      return Date.parse(right.publishedAt) - Date.parse(left.publishedAt);
+      return sourceTierRank(left.tier) - sourceTierRank(right.tier);
     });
 }

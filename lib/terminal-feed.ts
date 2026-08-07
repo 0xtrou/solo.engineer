@@ -567,13 +567,13 @@ export async function getTerminalFeed(): Promise<TerminalFeedResponse> {
 
   return {
     items: results.flatMap((result) => result.items).sort((left, right) => {
-      const score = maxScore(right.categoryScores ?? {}) - maxScore(left.categoryScores ?? {});
-      if (score !== 0) return score;
-      const tierRank = terminalTierRank(left.tier) - terminalTierRank(right.tier);
-      if (tierRank !== 0) return tierRank;
       const leftTime = left.publishedAt ? Date.parse(left.publishedAt) : 0;
       const rightTime = right.publishedAt ? Date.parse(right.publishedAt) : 0;
-      return rightTime - leftTime;
+      const latest = rightTime - leftTime;
+      if (latest !== 0) return latest;
+      const score = maxScore(right.categoryScores ?? {}) - maxScore(left.categoryScores ?? {});
+      if (score !== 0) return score;
+      return terminalTierRank(left.tier) - terminalTierRank(right.tier);
     }),
     statuses: results.map((result) => result.status),
     fetchedAt: new Date().toISOString(),
