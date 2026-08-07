@@ -320,7 +320,7 @@ async function getVietnamRegulation(): Promise<FeedItem[]> {
       title: document.tenvb || document.mavb || "Vietnamese legal document",
       summary: shorten(document.tomtat || "Open this official document from Vietnam’s National Law Portal."),
       author: document.coquanbanhanh_id?.[0]?.tencoquan_en || "Vietnam National Law Portal",
-      url: "https://vietnamlaw.gov.vn/",
+      url: `https://vietnamlaw.gov.vn/en/legal-documents/${document._id}`,
       publishedAt: document.ngaycapnhat || document.ngaybanhanh || new Date().toISOString(),
       tag: document.linhvuc_id?.[0]?.tenlinhvuc_en || "Vietnam regulation",
     }));
