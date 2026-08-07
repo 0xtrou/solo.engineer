@@ -110,12 +110,42 @@ export function scoreCategories(text: string): Record<Category, number> {
   return scores;
 }
 
+// Keyword-only scoring for general-reader feeds (home). Word-boundary matching
+// avoids false positives ("ai" in "rain") but doesn't require infra evidence.
+// Suitable for blogs, research, policy, education content where $/MW/nm
+// signals don't apply.
+export function scoreCategoriesKeyword(text: string): Record<Category, number> {
+  const scores: Record<Category, number> = { ...emptyScores };
+  for (const category of SHARED_CATEGORIES) {
+    scores[category] = categoryKeywordRegexes[category].reduce((count, regex) => count + (regex.test(text) ? 1 : 0), 0);
+  }
+  return scores;
+}
+
 export function categorizeArticle(
   title: string,
   summary: string | undefined,
   fallback: Category,
 ): { category: Category; scores: Record<Category, number> } {
   const scores = scoreCategories(`${title} ${summary ?? ""}`);
+  let best = fallback;
+  let bestScore = 0;
+  for (const category of SHARED_CATEGORIES) {
+    if (scores[category] > bestScore) {
+      bestScore = scores[category];
+      best = category;
+    }
+  }
+  return { category: best, scores };
+}
+
+// Keyword-only categorizer for general-reader feeds (home).
+export function categorizeArticleKeyword(
+  title: string,
+  summary: string | undefined,
+  fallback: Category,
+): { category: Category; scores: Record<Category, number> } {
+  const scores = scoreCategoriesKeyword(`${title} ${summary ?? ""}`);
   let best = fallback;
   let bestScore = 0;
   for (const category of SHARED_CATEGORIES) {
