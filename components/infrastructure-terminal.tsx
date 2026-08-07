@@ -271,9 +271,13 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
   const sources = useMemo(() =>
     uniqueBy(regionalStatuses, (status) => status.sourceId)
       .map((source, index) => ({ source, index }))
-      .sort((left, right) => terminalTierRankForStatus(left.source) - terminalTierRankForStatus(right.source) || left.index - right.index)
+      .sort((left, right) => {
+        const scoreDiff = (sourceScores.get(right.source.sourceId) ?? 0) - (sourceScores.get(left.source.sourceId) ?? 0);
+        if (scoreDiff !== 0) return scoreDiff;
+        return terminalTierRankForStatus(left.source) - terminalTierRankForStatus(right.source) || left.index - right.index;
+      })
       .map((entry) => entry.source),
-  [regionalStatuses]);
+  [regionalStatuses, sourceScores]);
   const liveSourceCount = sources.filter((source) => source.loaded).length;
   const hasVisibleData = visibleItems.length > 0;
   const categoryCounts = useMemo(() => new Map(categoryOrder.map((category) => [category, regionalItems.filter((item) => item.category === category).length])), [regionalItems]);
@@ -284,10 +288,14 @@ export function InfrastructureTerminal({ initialFeed }: InfrastructureTerminalPr
     return sources.map((source) => ({
       ...source,
       count: byCount.get(source.sourceId) ?? 0,
-    })).sort((left, right) => right.count - left.count
-      || terminalTierRankForStatus(left) - terminalTierRankForStatus(right)
-      || left.name.localeCompare(right.name));
-  }, [sources, visibleItems]);
+    })).sort((left, right) => {
+      const scoreDiff = (sourceScores.get(right.sourceId) ?? 0) - (sourceScores.get(left.sourceId) ?? 0);
+      if (scoreDiff !== 0) return scoreDiff;
+      return terminalTierRankForStatus(left) - terminalTierRankForStatus(right)
+        || right.count - left.count
+        || left.name.localeCompare(right.name);
+    });
+  }, [sources, visibleItems, sourceScores]);
   const maxSourceCount = Math.max(...sourceCapture.map((source) => source.count), 1);
   const activityPoints = useMemo<ActivityPoint[]>(() => {
     const timestamps = visibleItems.flatMap((item) => item.publishedAt ? [Date.parse(item.publishedAt)] : []).filter((value) => Number.isFinite(value));

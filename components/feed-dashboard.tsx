@@ -342,8 +342,13 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
     const tier = sourceMeta[source]?.tier;
     return tier === "T1" ? 0 : tier === "T2" ? 1 : 2;
   }, []);
-  const sortedResearchSources = useMemo(() => [...researchSourceIds].sort((a, b) => tierIndexOf(a) - tierIndexOf(b)), [tierIndexOf]);
-  const sortedPolicySources = useMemo(() => [...policySourceIds].sort((a, b) => tierIndexOf(a) - tierIndexOf(b)), [tierIndexOf]);
+  const byScoreThenTier = useCallback((a: SourceId, b: SourceId) => {
+    const scoreDiff = (sourceAvgScore.get(b) ?? 0) - (sourceAvgScore.get(a) ?? 0);
+    if (scoreDiff !== 0) return scoreDiff;
+    return tierIndexOf(a) - tierIndexOf(b);
+  }, [sourceAvgScore, tierIndexOf]);
+  const sortedResearchSources = useMemo(() => [...researchSourceIds].sort(byScoreThenTier), [byScoreThenTier]);
+  const sortedPolicySources = useMemo(() => [...policySourceIds].sort(byScoreThenTier), [byScoreThenTier]);
 
   const loadedCount = feed?.statuses.filter((status) => status.loaded).length ?? 0;
   const unavailableStatuses = feed?.statuses.filter((status) => !status.loaded) ?? [];
@@ -449,7 +454,7 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
 
           <nav className="tab-scroll -mx-5 flex gap-2 overflow-x-auto border-b border-[#e6e6e0] px-5 py-3 lg:hidden" aria-label="Filter feed by source">
             <button className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${filters.source === "all" ? "border-[#263e52] bg-[#263e52] text-white" : "border-[#dde0da] bg-white text-[#59615c]"}`} onClick={() => setSource("all")}>All</button>
-            {[...mobileSourceIds].sort((a, b) => tierIndexOf(a) - tierIndexOf(b)).map((source) => (
+            {[...mobileSourceIds].sort(byScoreThenTier).map((source) => (
               <button key={source} className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${filters.source === source ? "border-[#d76346] bg-[#fff2ed] text-[#a94833]" : "border-[#dde0da] bg-white text-[#59615c]"}`} onClick={() => setSource(source)}>
                 <span style={{ color: sourceMeta[source].accent }}><SourceMark source={source} size={13} /></span>
                 {sourceMeta[source].label}
@@ -487,7 +492,7 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
           <section className="mt-7 border-t border-[#e4e6e1] pt-5">
             <div className="flex items-center justify-between"><h2 className="font-display text-[15px] text-[#2c322f]">Live sources</h2><button className="text-[10px] font-semibold text-[#dc694b]" onClick={() => void refresh()}>Refresh all</button></div>
             <div className="mt-3 space-y-1.5">
-              {feed?.statuses.slice().sort((a, b) => tierIndexOf(a.source) - tierIndexOf(b.source)).map((status) => { const score = sourceAvgScore.get(status.source) ?? 0; return (<div key={status.source} className="flex items-center gap-2 rounded px-1 py-1 text-[11px] text-[#59615c]"><span className={`h-1.5 w-1.5 rounded-full ${status.loaded ? "bg-[#67aa72]" : "bg-[#d99157]"}`} /><span className="flex-1">{sourceMeta[status.source].label}</span><span className="font-mono text-[9px] text-[#d76346]">{score.toFixed(1)}</span><span className="font-mono text-[9px] text-[#a1a7a2]">{status.loaded ? "LIVE" : "WAIT"}</span></div>); })}
+              {feed?.statuses.slice().sort((a, b) => byScoreThenTier(a.source, b.source)).map((status) => { const score = sourceAvgScore.get(status.source) ?? 0; return (<div key={status.source} className="flex items-center gap-2 rounded px-1 py-1 text-[11px] text-[#59615c]"><span className={`h-1.5 w-1.5 rounded-full ${status.loaded ? "bg-[#67aa72]" : "bg-[#d99157]"}`} /><span className="flex-1">{sourceMeta[status.source].label}</span><span className="font-mono text-[9px] text-[#d76346]">{score.toFixed(1)}</span><span className="font-mono text-[9px] text-[#a1a7a2]">{status.loaded ? "LIVE" : "WAIT"}</span></div>); })}
             </div>
           </section>
 
