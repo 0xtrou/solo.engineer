@@ -49,14 +49,6 @@ const sourceRequestInit: RequestInit & { next: { revalidate: number } } = {
   headers: { "User-Agent": "SignalDesk/1.0 (personal research reader)" },
 };
 
-const browserRequestInit: RequestInit & { next: { revalidate: number } } = {
-  next: { revalidate: REVALIDATE_SECONDS },
-  headers: {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-  },
-};
-
 const sourceDefinitions = {
   eia: {
     sourceId: "eia",
@@ -256,15 +248,6 @@ const sourceDefinitions = {
     homepage: "https://spectrum.ieee.org/",
     endpoint: "https://spectrum.ieee.org/feeds/feed.rss",
   },
-  dataCenterDynamics: {
-    sourceId: "data-center-dynamics",
-    region: "global",
-    category: "Power & grid",
-    tier: "T2 trade",
-    name: "Data Center Dynamics",
-    homepage: "https://www.datacenterdynamics.com/",
-    endpoint: "https://www.datacenterdynamics.com/en/rss/",
-  },
 } as const satisfies Record<string, SourceDefinition>;
 
 const relevanceTerms: Partial<Record<string, string[]>> = {
@@ -373,12 +356,6 @@ function parseRss(xml: string, base: string): RssEntry[] {
 
 async function fetchText(url: string): Promise<string> {
   const response = await fetch(url, { ...sourceRequestInit, signal: AbortSignal.timeout(15_000) });
-  if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-  return response.text();
-}
-
-async function fetchTextAsBrowser(url: string): Promise<string> {
-  const response = await fetch(url, { ...browserRequestInit, signal: AbortSignal.timeout(15_000) });
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
   return response.text();
 }
@@ -532,7 +509,6 @@ const adapters: Adapter[] = [
   { source: sourceDefinitions.bloomberg, load: async () => parseRss(await fetchText(sourceDefinitions.bloomberg.endpoint), sourceDefinitions.bloomberg.homepage) },
   { source: sourceDefinitions.wsj, load: async () => parseRss(await fetchText(sourceDefinitions.wsj.endpoint), sourceDefinitions.wsj.homepage) },
   { source: sourceDefinitions.ieeeSpectrum, load: async () => parseRss(await fetchText(sourceDefinitions.ieeeSpectrum.endpoint), sourceDefinitions.ieeeSpectrum.homepage) },
-  { source: sourceDefinitions.dataCenterDynamics, load: async () => parseRss(await fetchTextAsBrowser(sourceDefinitions.dataCenterDynamics.endpoint), sourceDefinitions.dataCenterDynamics.homepage) },
 ];
 
 export function isTerminalRegion(value: string | null | undefined): value is TerminalRegionId {

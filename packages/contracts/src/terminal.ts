@@ -51,7 +51,6 @@ export const terminalSourceIds = [
   "bloomberg",
   "wsj",
   "ieee-spectrum",
-  "data-center-dynamics",
 ] as const;
 export type TerminalSourceId = (typeof terminalSourceIds)[number];
 
