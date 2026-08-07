@@ -42,8 +42,6 @@ import { CategoryScores } from "@/components/category-scores";
 import { maxScore } from "@/lib/categories";
 import {
   defaultFeedFilters,
-  getFeedCategorySlug,
-  getFeedSourceRequest,
   parseFeedFilters,
   policySourceIds,
   researchSourceIds,
@@ -162,6 +160,20 @@ function SourcePill({ source }: { source: SourceId }) {
   );
 }
 
+function SourceButton({ source, active, score, onClick }: { source: SourceId; active: boolean; score: number; onClick: () => void }) {
+  return (
+    <button
+      className={`source-item ${active ? "source-item-active" : ""}`}
+      onClick={onClick}
+      data-testid={`source-filter-${source}`}
+    >
+      <span style={{ color: sourceMeta[source].accent }}><SourceMark source={source} size={16} /></span>
+      {sourceMeta[source].label}
+      <span className="text-[#d76346]">{score.toFixed(1)}</span>
+    </button>
+  );
+}
+
 function FeedCard({ item, saved, upvoted, onToggleSave, onToggleVote }: {
   item: FeedItem;
   saved: boolean;
@@ -251,11 +263,9 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [upvoted, setUpvoted] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<Toast>(null);
-  const categorySlug = getFeedCategorySlug(filters.view);
-  const sourceRequest = getFeedSourceRequest(filters);
   const feedQuery = useQuery<FeedResponse>({
-    queryKey: ["feed", { category: categorySlug, source: sourceRequest, query: filters.query }],
-    queryFn: ({ signal }) => fetchFeed({ category: categorySlug, sources: sourceRequest, query: filters.query }, signal),
+    queryKey: ["feed"],
+    queryFn: ({ signal }) => fetchFeed(signal),
     initialData: initialFeed,
     placeholderData: (previous) => previous,
     staleTime: 300_000,
@@ -392,28 +402,16 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
           </div>
           <nav className="mt-2 space-y-1" aria-label="Research sources">
             <button className={`source-item ${filters.source === "all" ? "source-item-active" : ""}`} onClick={() => setSource("all")} data-testid="source-filter-all"><Sparkles size={16} /> All sources <span>{feed?.items.length ?? 0}</span></button>
-            {sortedResearchSources.map((source) => {
-              const score = sourceAvgScore.get(source) ?? 0;
-              return (
-                <button key={source} className={`source-item ${filters.source === source ? "source-item-active" : ""}`} onClick={() => setSource(source)} data-testid={`source-filter-${source}`}>
-                  <span style={{ color: sourceMeta[source].accent }}><SourceMark source={source} size={16} /></span>{sourceMeta[source].label}
-                  <span className="text-[#d76346]">{score.toFixed(1)}</span>
-                </button>
-              );
-            })}
+            {sortedResearchSources.map((source) => (
+              <SourceButton key={source} source={source} active={filters.source === source} score={sourceAvgScore.get(source) ?? 0} onClick={() => setSource(source)} />
+            ))}
           </nav>
           <button className="mt-3 flex items-center gap-2 px-2.5 text-[12px] font-semibold text-[#7c847f] hover:text-[#27302b]" onClick={() => notify("Discord and Hashnode need optional local adapters; see .env.example")}><Plus size={16} /> Add local source</button>
           <div className="mt-4 px-2.5 font-mono text-[10px] tracking-[.8px] text-[#989f9a]">POLICY & ECONOMY</div>
           <nav className="mt-2 space-y-1" aria-label="Policy and economy sources">
-            {sortedPolicySources.map((source) => {
-              const score = sourceAvgScore.get(source) ?? 0;
-              return (
-                <button key={source} className={`source-item ${filters.source === source ? "source-item-active" : ""}`} onClick={() => setSource(source)} data-testid={`source-filter-${source}`}>
-                  <span style={{ color: sourceMeta[source].accent }}><SourceMark source={source} size={16} /></span>{sourceMeta[source].label}
-                  <span className="text-[#d76346]">{score.toFixed(1)}</span>
-                </button>
-              );
-            })}
+            {sortedPolicySources.map((source) => (
+              <SourceButton key={source} source={source} active={filters.source === source} score={sourceAvgScore.get(source) ?? 0} onClick={() => setSource(source)} />
+            ))}
           </nav>
           <p className="mt-auto px-2.5 text-[10px] leading-5 text-[#9ba19c]">Professional personal reader<br />No account or tracking.</p>
         </aside>

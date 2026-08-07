@@ -22,12 +22,8 @@ function fromCanonical(payload: CanonicalResponse): FeedResponse {
   return { items, statuses: [], fetchedAt: payload.page.asOf };
 }
 
-export async function fetchFeed(params: { category: string; sources: string; query?: string }, signal?: AbortSignal): Promise<FeedResponse> {
-  const search = new URLSearchParams();
-  if (params.category !== "all") search.set("category", params.category);
-  if (params.sources !== "all") search.set("sources", params.sources);
-  if (params.query) search.set("q", params.query);
-  const response = await fetch(`/api/feed?${search.toString()}`, { signal, cache: "no-store" });
+export async function fetchFeed(signal?: AbortSignal): Promise<FeedResponse> {
+  const response = await fetch("/api/feed", { signal, cache: "no-store" });
   if (!response.ok) throw new Error("Feed request failed");
   const payload = await response.json() as FeedResponse | CanonicalResponse;
   return "data" in payload ? fromCanonical(payload) : payload;
