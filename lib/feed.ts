@@ -3,7 +3,7 @@ import { getE2eFeed } from "@/lib/feed-fixtures";
 import { sourceMeta } from "@/lib/source-meta";
 import type { FeedItem, FeedResponse, SourceId, SourceStatus } from "@/lib/types";
 
-const REVALIDATE_SECONDS = 300;
+const REVALIDATE_SECONDS = 600;
 const TOP_STORY_COUNT = 36;
 const PER_SOURCE_LIMIT = 7;
 
@@ -527,7 +527,7 @@ export async function getFeed(requestedSources: string | null): Promise<FeedResp
   ).flatMap((sourceItems) => filterAndRank(sourceItems).slice(0, PER_SOURCE_LIMIT));
 
   return {
-    items: filterAndRank(balancedItems).slice(0, 60),
+    items: filterAndRank(balancedItems).slice(0, 120),
     statuses: snapshot.statuses,
     fetchedAt: snapshot.fetchedAt,
   };
