@@ -4,7 +4,7 @@ const researchSources = [
   "arxiv", "hacker-news", "github", "stack-overflow", "dev", "indie-hackers", "bluesky", "openalex", "hugging-face", "microsoft-research", "google-ai", "mit-sloan", "social-media-today",
   "wikimedia", "creative-commons", "open-knowledge-foundation", "openstreetmap", "internet-archive", "learning-equality", "carpentries", "public-knowledge-project", "center-for-open-science", "numfocus", "open-source-ecology", "open-education-global", "oapen", "open-food-facts", "apereo", "posit", "moodle", "h5p", "canvas-lms", "overleaf", "pensoft", "frontiers", "automattic", "proton", "plausible", "matomo",
 ];
-const policySources = ["eu-regulation", "us-regulation", "vietnam-regulation", "world-bank"];
+const policySources = ["eu-regulation", "us-regulation", "vietnam-regulation", "baochinhphu", "world-bank"];
 
 test.describe("feed URL filters", () => {
   test("restores source, category, and search from a shared URL", async ({ page }) => {

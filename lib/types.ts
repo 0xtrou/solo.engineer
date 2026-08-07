@@ -10,6 +10,7 @@ export const SOURCE_IDS = [
   "eu-regulation",
   "us-regulation",
   "vietnam-regulation",
+  "baochinhphu",
   "world-bank",
   "openalex",
   "hugging-face",

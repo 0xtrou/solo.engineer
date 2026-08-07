@@ -10,6 +10,7 @@ export const feedSourceIds = [
   "eu-regulation",
   "us-regulation",
   "vietnam-regulation",
+  "baochinhphu",
   "world-bank",
   "openalex",
   "hugging-face",

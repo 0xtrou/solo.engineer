@@ -32,61 +32,6 @@ type OpenAlexWork = {
   concepts?: Array<{ display_name?: string }>;
 };
 
-const vietnamTopicTerms = [
-  "administrative",
-  "banking",
-  "business",
-  "commerce",
-  "competition",
-  "cyber",
-  "customs",
-  "data",
-  "digital",
-  "economy",
-  "electronic",
-  "energy",
-  "enterprise",
-  "finance",
-  "government",
-  "information technology",
-  "innovation",
-  "insurance",
-  "intellectual property",
-  "investment",
-  "labor",
-  "land",
-  "public administration",
-  "public security",
-  "science",
-  "securities",
-  "social insurance",
-  "startup",
-  "tax",
-  "technology",
-  "telecommunications",
-  "trade",
-  "chuyển đổi số",
-  "công nghệ",
-  "công nghệ thông tin",
-  "đầu tư",
-  "doanh nghiệp",
-  "doanh nghiệp công nghệ",
-  "điện tử",
-  "hạ tầng",
-  "khoa học",
-  "kinh doanh",
-  "lao động",
-  "ngân hàng",
-  "niêm yết",
-  "thuế",
-  "thương mại",
-  "viễn thông",
-  "vốn",
-  "an ninh mạng",
-  "bán dẫn",
-  "trung tâm dữ liệu",
-];
-
 function stripHtml(input: string | undefined): string {
   let decoded = (input ?? "")
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
@@ -338,11 +283,9 @@ async function getUsRegulation(): Promise<FeedItem[]> {
 
 async function getVietnamRegulation(): Promise<FeedItem[]> {
   const result = await fetchJson<{ docs?: VietnamDocument[] }>("https://vietnamlaw.gov.vn/api/vanbanmoi/public?limit=80");
+  // All docs from the National Law Portal are official legal documents — surface every one.
+  // The API caps at 15 English docs total; all are authoritative primary sources.
   return (result.docs ?? [])
-    .filter((document) => {
-      const text = `${document.tenvb ?? ""} ${document.tomtat ?? ""} ${document.linhvuc_id?.[0]?.tenlinhvuc_en ?? ""}`.toLowerCase();
-      return vietnamTopicTerms.some((term) => text.includes(term));
-    })
     .map((document) => ({
       id: `vietnam-${document._id}`,
       source: "vietnam-regulation" as const,
@@ -353,6 +296,20 @@ async function getVietnamRegulation(): Promise<FeedItem[]> {
       publishedAt: document.ngaycapnhat || document.ngaybanhanh || new Date().toISOString(),
       tag: document.linhvuc_id?.[0]?.tenlinhvuc_en || "Vietnam regulation",
     }));
+}
+
+async function getBaoChinhPhu(): Promise<FeedItem[]> {
+  const entries = await fetchRss("https://baochinhphu.vn/home.rss");
+  return entries.map((entry) => ({
+    id: `bcp-${entry.id}`,
+    source: "baochinhphu" as const,
+    title: entry.title,
+    summary: shorten(entry.description || "Open this update from the Government News Portal."),
+    author: "Government News Portal",
+    url: entry.link,
+    publishedAt: new Date(entry.publishedAt).toISOString(),
+    tag: "Vietnam government",
+  }));
 }
 
 async function getWorldBank(): Promise<FeedItem[]> {
@@ -463,6 +420,7 @@ const adapters: Record<LiveSourceId, () => Promise<FeedItem[]>> = {
   "eu-regulation": getEuRegulation,
   "us-regulation": getUsRegulation,
   "vietnam-regulation": getVietnamRegulation,
+  baochinhphu: getBaoChinhPhu,
   "world-bank": getWorldBank,
   bluesky: getBluesky,
   openalex: getOpenAlex,

@@ -91,6 +91,7 @@ const policySources = new Set<FeedItem["source"]>([
   "eu-regulation",
   "us-regulation",
   "vietnam-regulation",
+  "baochinhphu",
 ]);
 
 function searchableText(item: FeedItem): string {

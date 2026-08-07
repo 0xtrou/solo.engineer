@@ -20,6 +20,7 @@ export const sourceMeta: Record<SourceId, SourceMeta> = {
   "eu-regulation": { id: "eu-regulation", label: "EU Tech Policy", accent: "#2456a6", description: "AI Act and digital policy", tier: "T1" },
   "us-regulation": { id: "us-regulation", label: "US Regulation", accent: "#b4433c", description: "Federal AI and technology rules", tier: "T1" },
   "vietnam-regulation": { id: "vietnam-regulation", label: "Vietnam Law", accent: "#be2632", description: "Official national legal documents", tier: "T1" },
+  baochinhphu: { id: "baochinhphu", label: "Vietnam Gov Portal", accent: "#c8242c", description: "Government decrees and policy news", tier: "T1" },
   "world-bank": { id: "world-bank", label: "Global Economy", accent: "#0a6f94", description: "World Bank indicators and outlooks", tier: "T1" },
   openalex: { id: "openalex", label: "OpenAlex", accent: "#5f5ff6", description: "Academic research across AI and technology", tier: "T1" },
   "hugging-face": { id: "hugging-face", label: "Hugging Face", accent: "#ff9d00", description: "Open AI research and model tooling", tier: "T1" },
