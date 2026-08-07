@@ -517,10 +517,13 @@ export async function getFeedSnapshot(requestedSources: string | null): Promise<
   return { items, statuses, fetchedAt: new Date().toISOString() };
 }
 
+const FEED_LIMIT = 240;
+const GUARANTEED_PER_SOURCE = 2;
+
 export async function getFeed(requestedSources: string | null): Promise<FeedResponse> {
   const snapshot = await getFeedSnapshot(requestedSources);
 
-  const balancedItems = Object.values(
+  const rankedBySource = Object.values(
     snapshot.items.reduce<Partial<Record<SourceId, FeedItem[]>>>((groups, item) => {
       const group = groups[item.source] ?? [];
       group.push(item);
@@ -529,8 +532,26 @@ export async function getFeed(requestedSources: string | null): Promise<FeedResp
     }, {}),
   ).flatMap((sourceItems) => filterAndRank(sourceItems).slice(0, PER_SOURCE_LIMIT));
 
+  // Guarantee coverage: top N items per source always survive, so every live source appears.
+  // Vietnam-regulation and world-bank (low infra-keyword scores but high editorial value)
+  // would otherwise be crowded out by score-sort.
+  const guaranteed: FeedItem[] = [];
+  const remaining: FeedItem[] = [];
+  const takenPerSource = new Map<string, number>();
+  const ranked = filterAndRank(rankedBySource);
+  for (const item of ranked) {
+    const taken = takenPerSource.get(item.source) ?? 0;
+    if (taken < GUARANTEED_PER_SOURCE) {
+      guaranteed.push(item);
+      takenPerSource.set(item.source, taken + 1);
+    } else {
+      remaining.push(item);
+    }
+  }
+  const items = [...guaranteed, ...remaining].slice(0, FEED_LIMIT);
+
   return {
-    items: filterAndRank(balancedItems).slice(0, 240),
+    items,
     statuses: snapshot.statuses,
     fetchedAt: snapshot.fetchedAt,
   };
