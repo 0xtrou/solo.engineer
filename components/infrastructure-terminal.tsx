@@ -157,11 +157,11 @@ function ArticleRow({ article }: { article: TerminalArticle }) {
           <span>·</span>
           <time dateTime={article.publishedAt}>{formatArticleDate(article.publishedAt)}</time>
         </div>
-        <a className="mt-2 block text-[15px] font-semibold leading-6 text-[#e8eef5] transition hover:text-[#82e6bc] sm:text-[16px]" href={article.url} target="_blank" rel="noreferrer">
+        <a className="mt-2 block break-words text-[15px] font-semibold leading-6 text-[#e8eef5] transition hover:text-[#82e6bc] sm:text-[16px]" href={article.url} target="_blank" rel="noreferrer">
           {article.title}
           <ExternalLink className="ml-2 inline-block -translate-y-px" size={14} aria-hidden="true" />
         </a>
-        {article.summary && <p className="mt-2 max-w-4xl text-[13px] leading-5 text-[#a3b0c1]">{article.summary}</p>}
+        {article.summary && <p className="mt-2 max-w-4xl break-words text-[13px] leading-5 text-[#a3b0c1]">{article.summary}</p>}
         {article.categoryScores && (
           <div className="mt-2">
             <CategoryScores scores={article.categoryScores} testId="terminal-category-scores" activeColor="#60d7a5" mutedColor="#5f7080" />
