@@ -107,6 +107,20 @@ const cryptoDomainEntries: Array<[string, string[]]> = [
   ["coingecko-markets", ["coingecko.com"]],
   ["defillama-chains", ["defillama.com", "llama.fi"]],
   ["defillama-protocols", ["defillama.com", "llama.fi"]],
+  ["bitcoin-magazine", ["bitcoinmagazine.com"]],
+  ["bitmex", ["bitmex.com", "blog.bitmex.com"]],
+  ["monero", ["getmonero.org"]],
+  ["monero-observer", ["monero.observer"]],
+  ["cardano-iohk", ["iohk.io", "input-output.io"]],
+  ["cardano-org", ["cardano.org"]],
+  ["celestia", ["celestia.org", "blog.celestia.org"]],
+  ["movement", ["movementnetwork.xyz", "movementlabs.xyz"]],
+  ["the-defiant", ["thedefiant.io"]],
+  ["blockworks", ["blockworks.co"]],
+  ["decrypt", ["decrypt.co"]],
+  ["cryptoslate", ["cryptoslate.com"]],
+  ["dappradar", ["dappradar.com"]],
+  ["matter-labs", ["matter-labs.io", "blog.matter-labs.io", "zksync.io"]],
 ];
 
 export const cryptoSourceDomains: Map<string, Set<string>> = new Map(

@@ -42,6 +42,20 @@ export const cryptoSourceIds = [
   "coingecko-markets",
   "defillama-chains",
   "defillama-protocols",
+  "bitcoin-magazine",
+  "bitmex",
+  "monero",
+  "monero-observer",
+  "cardano-iohk",
+  "cardano-org",
+  "celestia",
+  "movement",
+  "the-defiant",
+  "blockworks",
+  "decrypt",
+  "cryptoslate",
+  "dappradar",
+  "matter-labs",
 ] as const;
 export type CryptoSourceId = (typeof cryptoSourceIds)[number];
 
