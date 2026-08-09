@@ -1,4 +1,3 @@
-import { maxScore, SHARED_CATEGORIES, type Category } from "@/lib/categories";
 import { domainToSourceId, registrableDomain } from "@/lib/source-domains";
 
 type Item = {
@@ -9,7 +8,7 @@ type Item = {
   url: string;
   publishedAt?: string;
   category?: string;
-  categoryScores?: Partial<Record<Category, number>>;
+  categoryScores?: Record<string, number>;
 };
 
 export type SourceQuality = {
@@ -19,7 +18,7 @@ export type SourceQuality = {
   total: number;
   citations: number;      // in-degree: how often other sources mention this source
   freshness: number;      // 0-1: items in last 7d / total
-  authority: Partial<Record<Category, number>>;  // category distribution % per source
+  authority: Record<string, number>;  // category distribution % per source
   composite: number;      // 0-100 weighted score
 };
 
@@ -53,10 +52,17 @@ export function computeSourceQuality<T extends Item>(
   const now = Date.now();
   const maxCitations = opts.citationMap ? Math.max(1, ...opts.citationMap.values()) : 1;
 
+  const peakOf = (scores: Record<string, number> | undefined): number => {
+    if (!scores) return 0;
+    let max = 0;
+    for (const value of Object.values(scores)) if (typeof value === "number" && value > max) max = value;
+    return max;
+  };
+
   for (const [sourceId, sourceItems] of bySource) {
     const total = sourceItems.length;
-    const scored = sourceItems.filter((i) => maxScore(i.categoryScores) > 0).length;
-    const peakSum = sourceItems.reduce((acc, i) => acc + maxScore(i.categoryScores), 0);
+    const scored = sourceItems.filter((i) => peakOf(i.categoryScores) > 0).length;
+    const peakSum = sourceItems.reduce((acc, i) => acc + peakOf(i.categoryScores), 0);
     const avgScore = total > 0 ? peakSum / total : 0;
     const yieldPct = total > 0 ? (scored / total) * 100 : 0;
 
@@ -67,8 +73,9 @@ export function computeSourceQuality<T extends Item>(
     const freshness = total > 0 ? fresh / total : 0;
 
     // Category authority profile
-    const authority: Partial<Record<Category, number>> = {};
-    for (const cat of SHARED_CATEGORIES) {
+    const authority: Record<string, number> = {};
+    const categorySet = new Set(sourceItems.map((i) => i.category).filter(Boolean) as string[]);
+    for (const cat of categorySet) {
       const count = sourceItems.filter((i) => i.category === cat).length;
       if (count > 0) authority[cat] = total > 0 ? (count / total) * 100 : 0;
     }

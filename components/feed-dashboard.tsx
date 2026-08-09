@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronRight,
   CircleAlert,
+  Coins,
   Compass,
   ExternalLink,
   Flame,
@@ -394,6 +395,7 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
           <nav className="mt-10 space-y-1" aria-label="Primary navigation">
             <button className={`nav-item ${!filters.saved ? "nav-item-active" : ""}`} onClick={() => updateFilters({ saved: false })}><Home size={19} /> Home</button>
             <Link className="nav-item" href="/terminal"><Compass size={19} /> AI Infra Terminal</Link>
+            <Link className="nav-item" href="/crypto"><Coins size={19} /> Crypto Terminal</Link>
             <button className={`nav-item ${filters.saved ? "nav-item-active" : ""}`} onClick={() => updateFilters({ saved: !filters.saved })}><Bookmark size={19} /> Library <span className="ml-auto font-mono text-[10px] font-medium text-[#8e9590]">{saved.size}</span></button>
           </nav>
 
@@ -425,6 +427,7 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
             </button>
             <div className="flex items-center gap-1">
               <Link className="rounded-md px-2 py-1.5 text-[11px] font-semibold text-[#5f6d67] hover:bg-[#f0f1ed] hover:text-[#202725]" href="/terminal">Terminal</Link>
+              <Link className="rounded-md px-2 py-1.5 text-[11px] font-semibold text-[#5f6d67] hover:bg-[#f0f1ed] hover:text-[#202725]" href="/crypto">Crypto</Link>
               <button className="rounded-md p-2 text-[#6c746f] hover:bg-[#f0f1ed] disabled:cursor-wait disabled:opacity-60" onClick={() => void refresh()} disabled={isRefreshing} aria-label="Refresh feed"><RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} /></button>
             </div>
           </header>
@@ -436,6 +439,7 @@ export function FeedDashboard({ initialFeed }: FeedDashboardProps) {
             </div>
             <div className="mt-1 hidden items-center gap-2 sm:flex">
               <Link className="inline-flex items-center gap-1.5 rounded-md border border-[#dedfd9] bg-[#fffefa] px-2.5 py-1.5 text-[11px] font-medium text-[#596762] shadow-sm hover:border-[#cfd2cc] hover:text-[#26342e]" href="/terminal"><Compass size={14} /> AI Infra Terminal</Link>
+              <Link className="inline-flex items-center gap-1.5 rounded-md border border-[#dedfd9] bg-[#fffefa] px-2.5 py-1.5 text-[11px] font-medium text-[#596762] shadow-sm hover:border-[#cfd2cc] hover:text-[#26342e]" href="/crypto"><Coins size={14} /> Crypto Terminal</Link>
               <button className="inline-flex items-center gap-1.5 rounded-md border border-[#dedfd9] bg-[#fffefa] px-2.5 py-1.5 text-[11px] font-medium text-[#717975] shadow-sm hover:border-[#cfd2cc] disabled:cursor-wait disabled:opacity-60" onClick={() => void refresh()} disabled={isRefreshing}>
                 <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} /> {isRefreshing ? "Refreshing" : "Refresh"}
               </button>

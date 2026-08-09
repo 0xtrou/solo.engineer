@@ -92,6 +92,27 @@ export const terminalSourceDomains: Map<string, Set<string>> = new Map(
   terminalDomainEntries.map(([sourceId, domains]) => [sourceId, new Set(domains.map(normalizeHost))]),
 );
 
+// Crypto terminal sourceId → domains.
+const cryptoDomainEntries: Array<[string, string[]]> = [
+  ["coindesk", ["coindesk.com"]],
+  ["cointelegraph", ["cointelegraph.com"]],
+  ["cointelegraph-markets", ["cointelegraph.com"]],
+  ["bitcointalk-launches", ["bitcointalk.org"]],
+  ["airdrops-io", ["airdrops.io"]],
+  ["coingecko-trending", ["coingecko.com"]],
+  ["solana", ["solana.com"]],
+  ["sui", ["sui.io"]],
+  ["sei", ["sei.io", "blog.sei.io"]],
+  ["blast", ["blast.io", "blog.blast.io"]],
+  ["coingecko-markets", ["coingecko.com"]],
+  ["defillama-chains", ["defillama.com", "llama.fi"]],
+  ["defillama-protocols", ["defillama.com", "llama.fi"]],
+];
+
+export const cryptoSourceDomains: Map<string, Set<string>> = new Map(
+  cryptoDomainEntries.map(([sourceId, domains]) => [sourceId, new Set(domains.map(normalizeHost))]),
+);
+
 // Extract registrable host from a URL string. Public-suffix-light: strip www.,
 // keep last two labels (covers .com/.org/.vn/.cn). For two-letter TLDs + country
 // second level (co.uk, com.vn, com.cn) keep three labels.
