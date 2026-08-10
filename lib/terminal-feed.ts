@@ -1,4 +1,5 @@
 import { categorizeArticle, maxScore, type Category } from "@/lib/categories";
+import { unstable_cache } from "next/cache";
 
 export const terminalRegionIds = ["us", "vietnam", "china", "global"] as const;
 
@@ -45,8 +46,8 @@ type SourceDefinition = Omit<TerminalSourceStatus, "loaded" | "itemCount" | "mes
 type RssEntry = { title: string; url: string; summary?: string; publishedAt?: string };
 
 const REVALIDATE_SECONDS = 600;
-const sourceRequestInit: RequestInit & { next: { revalidate: number } } = {
-  next: { revalidate: REVALIDATE_SECONDS },
+const sourceRequestInit: RequestInit = {
+  cache: "no-store",
   headers: { "User-Agent": "SignalDesk/1.0 (personal research reader)" },
 };
 
@@ -542,7 +543,7 @@ async function settleWithConcurrency<T>(tasks: Array<() => Promise<T>>, concurre
   return results;
 }
 
-export async function getTerminalFeed(): Promise<TerminalFeedResponse> {
+async function getTerminalFeedUncached(): Promise<TerminalFeedResponse> {
   const results = await settleWithConcurrency(adapters.map(({ source, load }) => async () => {
     try {
       const { items, rawCount } = toArticles(source, await load(), 6);
@@ -583,6 +584,10 @@ export async function getTerminalFeed(): Promise<TerminalFeedResponse> {
     fetchedAt: new Date().toISOString(),
   };
 }
+
+export const getTerminalFeed = unstable_cache(getTerminalFeedUncached, ["terminal-feed"], {
+  revalidate: REVALIDATE_SECONDS,
+});
 
 function terminalTierRank(tier: TerminalSourceTier | undefined): number {
   switch (tier) {

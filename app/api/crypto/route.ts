@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCryptoFeed } from "@/lib/crypto-feed";
 
-export const revalidate = 600;
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const data = await getCryptoFeed();

@@ -1,4 +1,5 @@
 import { categorizeArticle, maxScore, type CryptoCategory } from "@/lib/crypto-categories";
+import { unstable_cache } from "next/cache";
 
 export { type CryptoCategory };
 
@@ -56,8 +57,8 @@ type SourceDefinition = Omit<CryptoSourceStatus, "loaded" | "itemCount" | "messa
 type RssEntry = { title: string; url: string; summary?: string; publishedAt?: string };
 
 const REVALIDATE_SECONDS = 600;
-const sourceRequestInit: RequestInit & { next: { revalidate: number } } = {
-  next: { revalidate: REVALIDATE_SECONDS },
+const sourceRequestInit: RequestInit = {
+  cache: "no-store",
   headers: { "User-Agent": "SignalDesk/1.0 (personal crypto research reader)" },
 };
 
@@ -615,7 +616,7 @@ export function getCryptoSourceStatuses(): CryptoSourceStatus[] {
   }));
 }
 
-export async function getCryptoFeed(): Promise<CryptoFeedResponse> {
+async function getCryptoFeedUncached(): Promise<CryptoFeedResponse> {
   const [results, prices] = await Promise.all([
     settleWithConcurrency(adapters.map(({ source, load }) => async () => {
       try {
@@ -660,3 +661,7 @@ export async function getCryptoFeed(): Promise<CryptoFeedResponse> {
     fetchedAt: new Date().toISOString(),
   };
 }
+
+export const getCryptoFeed = unstable_cache(getCryptoFeedUncached, ["crypto-feed"], {
+  revalidate: REVALIDATE_SECONDS,
+});
