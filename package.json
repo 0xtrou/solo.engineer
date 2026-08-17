@@ -18,6 +18,7 @@
     "api:dev": "tsx apps/api/src/index.ts",
     "worker:dev": "tsx apps/worker/src/index.ts",
     "worker:once": "tsx apps/worker/src/index.ts --once",
+    "cba:fetch": "tsx scripts/fetch-congbobanan.ts",
     "test:services": "tsx --test apps/api/src/**/*.test.ts packages/adapters/src/**/*.test.ts"
   },
   "dependencies": {

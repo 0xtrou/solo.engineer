@@ -313,34 +313,58 @@ async function getBaoChinhPhu(): Promise<FeedItem[]> {
 }
 
 // Supreme Court judgment portal — ASP.NET WebForms, no RSS/API.
-// Homepage lists latest published judgments as chi-tiet-ban-an links; titles carry dates.
+// Geo-fenced to VN IPs: server fetch fails (TLS reset). Fallback chain:
+// 1. Live homepage scrape (works where network allows, e.g. local dev)
+// 2. data/congbobanan.json — committed by `npm run cba:fetch` run locally
 async function getCongBoBanAn(): Promise<FeedItem[]> {
-  const html = await (await fetch("https://congbobanan.toaan.gov.vn/", {
-    ...requestInit,
-    headers: { "User-Agent": "Mozilla/5.0 SignalDesk/1.0" },
-    signal: AbortSignal.timeout(15_000),
-  })).text();
-  const seen = new Set<string>();
-  return [...html.matchAll(/<a[^>]+href="(\/[0-9a-z]+\/chi-tiet-ban-an)"[^>]*>([\s\S]*?)<\/a>/gi)].flatMap((match) => {
-    const href = match[1];
-    const title = stripHtml(match[2]);
-    if (!title || title.length < 15 || seen.has(href)) return [];
-    seen.add(href);
-    const dateMatch = title.match(/ngày\s*(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})/i);
-    const publishedAt = dateMatch
-      ? new Date(Date.UTC(Number(dateMatch[3]), Number(dateMatch[2]) - 1, Number(dateMatch[1]))).toISOString()
-      : new Date().toISOString();
-    return [{
-      id: `cba-${href}`,
-      source: "congbobanan" as const,
-      title: shorten(title, 160),
-      summary: "Published court judgment or decision from the Supreme People's Court of Vietnam (Công bố bản án).",
-      author: "Supreme People's Court of Vietnam",
-      url: `https://congbobanan.toaan.gov.vn${href}`,
-      publishedAt,
-      tag: "Vietnam court judgment",
-    }];
-  }).slice(0, 12);
+  try {
+    const html = await (await fetch("https://congbobanan.toaan.gov.vn/", {
+      ...requestInit,
+      headers: { "User-Agent": "Mozilla/5.0 SignalDesk/1.0" },
+      signal: AbortSignal.timeout(15_000),
+    })).text();
+    const seen = new Set<string>();
+    const live = [...html.matchAll(/<a[^>]+href="(\/[0-9a-z]+\/chi-tiet-ban-an)"[^>]*>([\s\S]*?)<\/a>/gi)].flatMap((match) => {
+      const href = match[1];
+      const title = stripHtml(match[2]);
+      if (!title || title.length < 15 || seen.has(href)) return [];
+      seen.add(href);
+      const dateMatch = title.match(/ngày\s*(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})/i);
+      const year = dateMatch ? Number(dateMatch[3]) : 0;
+      const publishedAt = dateMatch && year >= 2015 && year <= 2100
+        ? new Date(Date.UTC(year, Number(dateMatch[2]) - 1, Number(dateMatch[1]))).toISOString()
+        : new Date().toISOString();
+      return [{
+        id: `cba-${href}`,
+        source: "congbobanan" as const,
+        title: shorten(title, 160),
+        summary: "Published court judgment or decision from the Supreme People's Court of Vietnam (Công bố bản án).",
+        author: "Supreme People's Court of Vietnam",
+        url: `https://congbobanan.toaan.gov.vn${href}`,
+        publishedAt,
+        tag: "Vietnam court judgment",
+      }];
+    }).slice(0, 12);
+    if (live.length) return live;
+  } catch {
+    // fall through to committed snapshot
+  }
+
+  const { readFile } = await import("node:fs/promises");
+  const snapshot = JSON.parse(await readFile("data/congbobanan.json", "utf8")) as {
+    fetchedAt: string;
+    items: Array<{ id: string; title: string; url: string; publishedAt: string }>;
+  };
+  return snapshot.items.map((item) => ({
+    id: item.id,
+    source: "congbobanan" as const,
+    title: shorten(item.title, 160),
+    summary: `Published court judgment from the Supreme People's Court of Vietnam. Snapshot fetched ${snapshot.fetchedAt.slice(0, 10)} (site geo-restricted to VN networks).`,
+    author: "Supreme People's Court of Vietnam",
+    url: item.url,
+    publishedAt: item.publishedAt,
+    tag: "Vietnam court judgment",
+  }));
 }
 
 async function getWorldBank(): Promise<FeedItem[]> {
