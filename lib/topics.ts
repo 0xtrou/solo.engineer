@@ -85,12 +85,13 @@ const alwaysRelevantSources = new Set<FeedItem["source"]>([
   "github",
   "stack-overflow",
   "world-bank",
+  "vietnam-regulation",
+  "congbobanan",
 ]);
 
 const policySources = new Set<FeedItem["source"]>([
   "eu-regulation",
   "us-regulation",
-  "vietnam-regulation",
   "baochinhphu",
 ]);
 

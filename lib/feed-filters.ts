@@ -53,7 +53,7 @@ export const researchSourceIds = [
   "matomo",
 ] as const satisfies readonly SourceId[];
 
-export const policySourceIds = ["eu-regulation", "us-regulation", "vietnam-regulation", "baochinhphu", "world-bank"] as const satisfies readonly SourceId[];
+export const policySourceIds = ["eu-regulation", "us-regulation", "vietnam-regulation", "baochinhphu", "congbobanan", "world-bank"] as const satisfies readonly SourceId[];
 
 export const selectableSourceIds = [...researchSourceIds, ...policySourceIds] as const satisfies readonly SourceId[];
 export type SelectableSourceId = (typeof selectableSourceIds)[number];

@@ -13,6 +13,7 @@ const homeSourceDomainTable: Record<SourceId, string[]> = {
   "us-regulation": ["federalregister.gov"],
   "vietnam-regulation": ["vietnamlaw.gov.vn"],
   baochinhphu: ["baochinhphu.vn", "chinhphu.vn", "bcp.cdnchinhphu.vn"],
+  congbobanan: ["congbobanan.toaan.gov.vn", "toaan.gov.vn"],
   "world-bank": ["worldbank.org", "data.worldbank.org"],
   openalex: ["openalex.org"],
   "hugging-face": ["huggingface.co"],

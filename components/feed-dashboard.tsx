@@ -71,6 +71,7 @@ const sourceIcons: Record<SourceId, typeof Sparkles> = {
   "us-regulation": Scale,
   "vietnam-regulation": Building2,
   baochinhphu: Landmark,
+  congbobanan: Scale,
   "world-bank": Landmark,
   openalex: BookOpenCheck,
   "hugging-face": Bot,

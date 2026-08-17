@@ -312,6 +312,37 @@ async function getBaoChinhPhu(): Promise<FeedItem[]> {
   }));
 }
 
+// Supreme Court judgment portal — ASP.NET WebForms, no RSS/API.
+// Homepage lists latest published judgments as chi-tiet-ban-an links; titles carry dates.
+async function getCongBoBanAn(): Promise<FeedItem[]> {
+  const html = await (await fetch("https://congbobanan.toaan.gov.vn/", {
+    ...requestInit,
+    headers: { "User-Agent": "Mozilla/5.0 SignalDesk/1.0" },
+    signal: AbortSignal.timeout(15_000),
+  })).text();
+  const seen = new Set<string>();
+  return [...html.matchAll(/<a[^>]+href="(\/[0-9a-z]+\/chi-tiet-ban-an)"[^>]*>([\s\S]*?)<\/a>/gi)].flatMap((match) => {
+    const href = match[1];
+    const title = stripHtml(match[2]);
+    if (!title || title.length < 15 || seen.has(href)) return [];
+    seen.add(href);
+    const dateMatch = title.match(/ngày\s*(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})/i);
+    const publishedAt = dateMatch
+      ? new Date(Date.UTC(Number(dateMatch[3]), Number(dateMatch[2]) - 1, Number(dateMatch[1]))).toISOString()
+      : new Date().toISOString();
+    return [{
+      id: `cba-${href}`,
+      source: "congbobanan" as const,
+      title: shorten(title, 160),
+      summary: "Published court judgment or decision from the Supreme People's Court of Vietnam (Công bố bản án).",
+      author: "Supreme People's Court of Vietnam",
+      url: `https://congbobanan.toaan.gov.vn${href}`,
+      publishedAt,
+      tag: "Vietnam court judgment",
+    }];
+  }).slice(0, 12);
+}
+
 async function getWorldBank(): Promise<FeedItem[]> {
   const result = await fetchJson<[unknown, WorldBankObservation[]]>("https://api.worldbank.org/v2/country/VNM;USA;WLD/indicator/NY.GDP.MKTP.KD.ZG?format=json&per_page=15&date=2024:2026");
   return (result[1] ?? [])
@@ -421,6 +452,7 @@ const adapters: Record<LiveSourceId, () => Promise<FeedItem[]>> = {
   "us-regulation": getUsRegulation,
   "vietnam-regulation": getVietnamRegulation,
   baochinhphu: getBaoChinhPhu,
+  congbobanan: getCongBoBanAn,
   "world-bank": getWorldBank,
   bluesky: getBluesky,
   openalex: getOpenAlex,
